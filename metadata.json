@@ -1,0 +1,8 @@
+{
+  "name": "SPEED-id-TV",
+  "description": "Server streaming siaran langsung dan IPTV dengan proxy adaptif HLS yang lancar dan stabil untuk perangkat mobile.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
