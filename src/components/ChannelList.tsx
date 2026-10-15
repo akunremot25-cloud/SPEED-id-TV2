@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { 
   Star, Search, Filter, Tv, Radio, Trash2, Plus, 
-  ExternalLink, Check, Download, AlertCircle, Signal, Pencil
+  ExternalLink, Check, Download, AlertCircle, Signal, Pencil, Database, RefreshCw
 } from 'lucide-react';
 import { Channel } from '../types/tvheadend';
+import { syncAllChannelsToDatabase } from '../services/api';
 
 interface ChannelListProps {
   channels: Channel[];
@@ -30,6 +31,23 @@ export const ChannelList: React.FC<ChannelListProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+
+  const handleSyncDatabase = async () => {
+    if (channels.length === 0) return;
+    setIsSyncing(true);
+    setSyncNotice(null);
+    try {
+      const res = await syncAllChannelsToDatabase(channels);
+      setSyncNotice(`${res.count} Saluran berhasil disimpan ke Database Cloud!`);
+      setTimeout(() => setSyncNotice(null), 4000);
+    } catch (err: any) {
+      setSyncNotice(`Gagal menyimpan ke database: ${err.message || 'Error'}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const categories = ['Semua', 'Favorit', 'Nasional', 'Berita', 'Olahraga', 'Hiburan', 'Mancanegara', 'Test'];
 
@@ -65,7 +83,16 @@ export const ChannelList: React.FC<ChannelListProps> = ({
           </div>
 
           {!isClientMode && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={handleSyncDatabase}
+                disabled={isSyncing}
+                className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 active:scale-95 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                title="Simpan Semua Saluran ke Database Cloud Firestore & Server"
+              >
+                <Database className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span className="hidden xs:inline">{isSyncing ? 'Menyimpan...' : 'Simpan DB'}</span>
+              </button>
               {onOpenAddModal && (
                 <button
                   onClick={onOpenAddModal}
@@ -88,6 +115,17 @@ export const ChannelList: React.FC<ChannelListProps> = ({
             </div>
           )}
         </div>
+
+        {/* Sync notification */}
+        {syncNotice && (
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+            <div className="flex items-center gap-1.5">
+              <Check className="w-3.5 h-3.5 shrink-0" />
+              <span>{syncNotice}</span>
+            </div>
+            <button onClick={() => setSyncNotice(null)} className="text-slate-400 hover:text-white text-xs px-1">✕</button>
+          </div>
+        )}
 
         {/* Search input */}
         <div className="relative">

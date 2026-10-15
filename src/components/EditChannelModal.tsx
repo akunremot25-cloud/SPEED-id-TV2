@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Pencil, Check, AlertCircle, Trash2, Wifi, Activity, 
-  ExternalLink, Image as ImageIcon, Zap, Radio, RefreshCw 
+  ExternalLink, Image as ImageIcon, Zap, Radio, RefreshCw, Database
 } from 'lucide-react';
 import { Channel } from '../types/tvheadend';
 import { updateChannel, testStreamReachability, deleteChannel } from '../services/api';
@@ -88,13 +88,13 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
         videoCodec,
       });
 
-      setSuccessMsg('Perubahan berhasil disimpan!');
+      setSuccessMsg('Perubahan berhasil disimpan permanen di Database Cloud & Server!');
       setTimeout(() => {
         onChannelUpdated(updated);
         onClose();
       }, 700);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal menyimpan perubahan');
+      setErrorMsg(err.message || 'Gagal menyimpan perubahan ke database');
     } finally {
       setIsSubmitting(false);
     }
@@ -121,14 +121,20 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
               <Pencil className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-white flex items-center gap-2">
-                Edit Saluran #{channel.number}
-                <span className="text-xs text-blue-400 font-normal truncate max-w-[160px] sm:max-w-xs">
-                  ({channel.name})
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  Edit Saluran #{channel.number}
+                  <span className="text-xs text-blue-400 font-normal truncate max-w-[160px] sm:max-w-xs">
+                    ({channel.name})
+                  </span>
+                </h2>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <Database className="w-2.5 h-2.5" />
+                  Database
                 </span>
-              </h2>
+              </div>
               <p className="text-xs text-slate-400">
-                Atur URL stream, kualitas mobile, kategori, dan informasi siaran
+                Perubahan tersimpan permanen ke Database Cloud Firestore & Server
               </p>
             </div>
           </div>
@@ -369,8 +375,8 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
                   disabled={isSubmitting}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl font-semibold shadow-md shadow-blue-900/40 flex items-center gap-1.5 transition-all"
                 >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>{isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                  <Database className="w-3.5 h-3.5" />
+                  <span>{isSubmitting ? 'Menyimpan ke Database...' : 'Simpan ke Database'}</span>
                 </button>
               </div>
             </div>

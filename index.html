@@ -2,6 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      // In AI Studio iframe preview, HMR WebSocket is disabled.
+      // Absorb dev WebSocket connection notices cleanly.
+      window.addEventListener('unhandledrejection', function (e) {
+        var reason = e && (e.reason?.message || e.reason || '');
+        if (typeof reason === 'string' && (reason.indexOf('WebSocket') !== -1 || reason.indexOf('vite') !== -1)) {
+          e.preventDefault();
+        }
+      });
+      window.addEventListener('error', function (e) {
+        var msg = e && (e.message || '');
+        if (typeof msg === 'string' && (msg.indexOf('WebSocket') !== -1 || msg.indexOf('vite') !== -1)) {
+          e.preventDefault();
+        }
+      });
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SPEED-id-TV - Streaming Siaran Langsung & Daftar Saluran</title>
     <meta name="description" content="Server streaming siaran langsung dan IPTV dengan proxy adaptif HLS yang lancar dan stabil untuk perangkat mobile." />

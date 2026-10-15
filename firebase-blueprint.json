@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Channel": {
+      "title": "Channel",
+      "description": "A live TV or IPTV streaming channel definition",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the channel"
+        },
+        "number": {
+          "type": "number",
+          "description": "Channel logical number"
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the channel",
+          "maxLength": 100
+        },
+        "category": {
+          "type": "string",
+          "description": "Channel category",
+          "maxLength": 50
+        },
+        "logo": {
+          "type": "string",
+          "description": "Channel logo image URL",
+          "maxLength": 500
+        },
+        "streamUrl": {
+          "type": "string",
+          "description": "HLS stream M3U8 URL",
+          "maxLength": 1000
+        },
+        "quality": {
+          "type": "string",
+          "description": "Stream resolution quality",
+          "maxLength": 20
+        },
+        "fps": {
+          "type": "number",
+          "description": "Video frames per second"
+        },
+        "bitrateKbps": {
+          "type": "number",
+          "description": "Video bitrate in kbps"
+        },
+        "audioCodec": {
+          "type": "string",
+          "description": "Audio codec",
+          "maxLength": 20
+        },
+        "videoCodec": {
+          "type": "string",
+          "description": "Video codec",
+          "maxLength": 20
+        },
+        "isFavorite": {
+          "type": "boolean",
+          "description": "Whether the channel is marked as favorite"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "number", "name", "category", "streamUrl"]
+    }
+  },
+  "firestore": {
+    "/channels/{channelId}": {
+      "schema": {
+        "$ref": "Channel"
+      },
+      "description": "Collection of TV broadcast channels with persistent configurations"
+    }
+  }
+}

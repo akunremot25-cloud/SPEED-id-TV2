@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Server, Cpu, Activity, Signal, Radio, Check, Copy, Download, 
-  Settings, Wifi, Shield, RefreshCw, Smartphone, Monitor
+  Settings, Wifi, Shield, RefreshCw, Smartphone, Monitor, Database, Trash2
 } from 'lucide-react';
 import { TunerStatus, TvheadendServerConfig } from '../types/tvheadend';
-import { fetchTuners, fetchServerConfig, updateServerConfig, fetchServerHealth } from '../services/api';
+import { 
+  fetchTuners, fetchServerConfig, updateServerConfig, fetchServerHealth,
+  fetchChannels, syncAllChannelsToDatabase, resetDatabaseToDefault
+} from '../services/api';
 
 interface TvheadendServerDashboardProps {
   onClose: () => void;
@@ -28,6 +31,8 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
   const [isCopied, setIsCopied] = useState<boolean>(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
+  const [isSyncingDb, setIsSyncingDb] = useState<boolean>(false);
+  const [dbNotice, setDbNotice] = useState<string | null>(null);
 
   const playlistUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/tvheadend/playlist.m3u` : '/api/tvheadend/playlist.m3u';
 
@@ -49,6 +54,37 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
       if (hData) setServerHealth(hData);
     } catch (err) {
       console.warn('Dashboard data fetch error:', err);
+    }
+  };
+
+  const handleSyncAllChannels = async () => {
+    setIsSyncingDb(true);
+    setDbNotice(null);
+    try {
+      const allCh = await fetchChannels();
+      const res = await syncAllChannelsToDatabase(allCh);
+      setDbNotice(`Sukses: ${res.count} saluran berhasil disimpan permanen ke Database Cloud & Server!`);
+      loadData();
+      setTimeout(() => setDbNotice(null), 4000);
+    } catch (err: any) {
+      setDbNotice(`Gagal menyimpan ke database: ${err.message || 'Error'}`);
+    } finally {
+      setIsSyncingDb(false);
+    }
+  };
+
+  const handleResetDatabase = async () => {
+    if (!confirm('Apakah Anda yakin ingin mereset seluruh database saluran ke pengaturan standar bawaan?')) return;
+    setIsSyncingDb(true);
+    try {
+      await resetDatabaseToDefault();
+      setDbNotice('Database saluran berhasil direset ke konfigurasi bawaan.');
+      loadData();
+      setTimeout(() => setDbNotice(null), 4000);
+    } catch (err: any) {
+      setDbNotice(`Gagal mereset database: ${err.message || 'Error'}`);
+    } finally {
+      setIsSyncingDb(false);
     }
   };
 
@@ -232,6 +268,59 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
                 <Download className="w-4 h-4" />
               </a>
             </div>
+          </div>
+
+          {/* Database Cloud Firestore Section */}
+          <div className="p-4 rounded-xl bg-slate-800/40 border border-slate-700/80 space-y-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <Database className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                    Database Cloud Firestore
+                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
+                      Tersambung
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    Database ID: <span className="font-mono text-slate-300">ai-studio-speedidtv</span> • Sinkronisasi otomatis data saluran siaran
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSyncAllChannels}
+                  disabled={isSyncingDb}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md active:scale-95 transition-all"
+                  title="Simpan seluruh data saluran saat ini ke Database Cloud Firestore"
+                >
+                  <Database className={`w-3.5 h-3.5 ${isSyncingDb ? 'animate-spin' : ''}`} />
+                  <span>{isSyncingDb ? 'Menyimpan...' : 'Simpan Semua Saluran ke DB'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetDatabase}
+                  disabled={isSyncingDb}
+                  className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all"
+                  title="Reset seluruh saluran ke daftar default"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Reset Bawaan</span>
+                </button>
+              </div>
+            </div>
+
+            {dbNotice && (
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
+                <Check className="w-3.5 h-3.5 shrink-0" />
+                <span>{dbNotice}</span>
+              </div>
+            )}
           </div>
 
           {/* Configuration Form (Mode, Transcoder, External Host) */}

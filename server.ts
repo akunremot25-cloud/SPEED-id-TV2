@@ -1,4 +1,5 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
@@ -195,10 +196,73 @@ const DEFAULT_CHANNELS: ServerChannel[] = [
   }
 ];
 
-let channels: ServerChannel[] = [...DEFAULT_CHANNELS];
+import fs from 'fs';
+
+const DATA_DIR = path.resolve(__dirname, 'data');
+const DB_FILE = path.join(DATA_DIR, 'channels.db.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.db.json');
+
+// Ensure database directory exists
+if (!fs.existsSync(DATA_DIR)) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function loadChannelsFromDb(): ServerChannel[] {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const content = fs.readFileSync(DB_FILE, 'utf-8');
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        console.log(`[Database] Memuat ${parsed.length} saluran dari ${DB_FILE}`);
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('[Database] Gagal membaca data saluran:', err);
+  }
+  // Initialize with DEFAULT_CHANNELS if empty or not found
+  console.log('[Database] Menginisialisasi saluran bawaan ke database...');
+  saveChannelsToDb(DEFAULT_CHANNELS);
+  return [...DEFAULT_CHANNELS];
+}
+
+function saveChannelsToDb(data: ServerChannel[]) {
+  try {
+    const tempFile = `${DB_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tempFile, DB_FILE);
+  } catch (err) {
+    console.error('[Database] Gagal menyimpan data saluran:', err);
+  }
+}
+
+function loadConfigFromDb(): any {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      const content = fs.readFileSync(CONFIG_FILE, 'utf-8');
+      return JSON.parse(content);
+    }
+  } catch (err) {
+    console.error('[Database] Gagal membaca konfigurasi server:', err);
+  }
+  return null;
+}
+
+function saveConfigToDb(cfg: any) {
+  try {
+    const tempFile = `${CONFIG_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(cfg, null, 2), 'utf-8');
+    fs.renameSync(tempFile, CONFIG_FILE);
+  } catch (err) {
+    console.error('[Database] Gagal menyimpan konfigurasi server:', err);
+  }
+}
+
+// Initialized from persistent database
+let channels: ServerChannel[] = loadChannelsFromDb();
 
 // Tvheadend Server Configuration
-let serverConfig = {
+const DEFAULT_CONFIG = {
   mode: 'standalone' as 'standalone' | 'connected',
   host: '127.0.0.1',
   port: 9981,
@@ -210,6 +274,8 @@ let serverConfig = {
   bufferSeconds: 15,
   lowLatencyMode: true,
 };
+
+let serverConfig = loadConfigFromDb() || { ...DEFAULT_CONFIG };
 
 // Tuner mock & status
 const tuners = [
@@ -361,7 +427,33 @@ app.post('/api/tvheadend/channels', (req: Request, res: Response) => {
   };
 
   channels.push(newChannel);
+  saveChannelsToDb(channels);
   res.json({ success: true, channel: newChannel });
+});
+
+app.post('/api/tvheadend/channels/sync-all', (req: Request, res: Response) => {
+  const incoming = req.body.channels;
+  if (!Array.isArray(incoming)) {
+    res.status(400).json({ error: 'Data channels harus berupa array' });
+    return;
+  }
+  channels = incoming.map((ch: any) => ({
+    id: ch.id || `custom-${Date.now()}`,
+    number: Number(ch.number) || 1,
+    name: ch.name || 'Channel',
+    category: ch.category || 'Nasional',
+    logo: ch.logo || 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=128&auto=format&fit=crop&q=80',
+    streamUrl: ch.streamUrl,
+    backupUrls: ch.backupUrls || [],
+    quality: ch.quality || 'Auto',
+    fps: Number(ch.fps) || 30,
+    bitrateKbps: Number(ch.bitrateKbps) || 2500,
+    audioCodec: ch.audioCodec || 'AAC',
+    videoCodec: ch.videoCodec || 'H.264',
+    isFavorite: !!ch.isFavorite,
+  }));
+  saveChannelsToDb(channels);
+  res.json({ success: true, message: 'Semua saluran berhasil disimpan ke database', count: channels.length });
 });
 
 app.put('/api/tvheadend/channels/:id', (req: Request, res: Response) => {
@@ -389,6 +481,7 @@ app.put('/api/tvheadend/channels/:id', (req: Request, res: Response) => {
   };
 
   const epg = getEpgForChannel(channels[index].name, channels[index].category);
+  saveChannelsToDb(channels);
   res.json({ success: true, channel: { ...channels[index], ...epg } });
 });
 
@@ -440,7 +533,15 @@ app.delete('/api/tvheadend/channels/:id', (req: Request, res: Response) => {
     res.status(404).json({ error: 'Saluran tidak ditemukan' });
     return;
   }
+  saveChannelsToDb(channels);
   res.json({ success: true, message: 'Saluran berhasil dihapus' });
+});
+
+// Database reset endpoint
+app.post('/api/tvheadend/database/reset', (_req: Request, res: Response) => {
+  channels = [...DEFAULT_CHANNELS];
+  saveChannelsToDb(channels);
+  res.json({ success: true, message: 'Database berhasil direset ke saluran default.', channelsCount: channels.length });
 });
 
 app.get('/api/tvheadend/tuners', (_req: Request, res: Response) => {
@@ -513,6 +614,7 @@ app.post('/api/tvheadend/import-m3u', (req: Request, res: Response) => {
     }
   }
 
+  saveChannelsToDb(channels);
   res.json({ success: true, importedCount, totalChannels: channels.length });
 });
 
@@ -668,7 +770,10 @@ async function startServer() {
   if (!isProd) {
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: false,
+      },
       appType: 'spa',
     });
     app.use(vite.middlewares);
