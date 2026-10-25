@@ -18,6 +18,7 @@ interface LivePlayerProps {
   onSelectChannel?: (channel: Channel) => void;
   onOpenChannelDrawer?: () => void;
   onOpenDiagnostics?: () => void;
+  onOpenStreamingProxy?: () => void;
   isClientMode?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
   onSelectChannel,
   onOpenChannelDrawer,
   onOpenDiagnostics,
+  onOpenStreamingProxy,
   isClientMode = false,
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -1161,7 +1163,21 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
               }`} />
               <span>Buffer: {health.bufferSeconds}s</span>
               <span className="hidden sm:inline">| Bitrate: {health.bitrateKbps} kbps</span>
-              <span className="hidden sm:inline">| {useProxy ? 'Proxy Stabilizer' : 'Direct'}</span>
+              {onOpenStreamingProxy ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenStreamingProxy();
+                  }}
+                  className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 hover:text-white hover:bg-indigo-500/30 border border-indigo-500/30 transition-colors"
+                  title="Klik untuk membuka Streaming Proxy Hub & Playlist M3U"
+                >
+                  <Radio className="w-2.5 h-2.5 text-indigo-400" />
+                  <span>Proxy: {useProxy ? 'Aktif (CORS OK)' : 'Direct'}</span>
+                </button>
+              ) : (
+                <span className="hidden sm:inline">| {useProxy ? 'Proxy Stabilizer' : 'Direct'}</span>
+              )}
             </div>
             <button 
               onClick={(e) => { e.stopPropagation(); jumpToLiveEdge(); }}
@@ -1326,6 +1342,25 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
               className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
             />
           </div>
+
+          {/* Dedicated Streaming Proxy Hub Button */}
+          {onOpenStreamingProxy && (
+            <button
+              onClick={() => {
+                setShowSettingsMenu(false);
+                onOpenStreamingProxy();
+              }}
+              className="p-2.5 rounded-xl bg-indigo-900/40 hover:bg-indigo-800/60 border border-indigo-500/30 text-indigo-200 hover:text-white font-semibold text-xs flex items-center justify-between active:scale-95 transition-all shadow-sm"
+            >
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-indigo-400 animate-pulse" />
+                <span>Buka Streaming Proxy Hub</span>
+              </div>
+              <span className="text-[10px] bg-indigo-950 px-1.5 py-0.5 rounded text-indigo-300 border border-indigo-500/20">
+                Uji & Link
+              </span>
+            </button>
+          )}
 
           {/* Mode Hemat Data Mobile */}
           <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/60">

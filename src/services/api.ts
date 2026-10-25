@@ -43,19 +43,68 @@ export async function fetchChannels(): Promise<Channel[]> {
         // Persistent database exists in Firestore: load user changes!
         const mergedMap = new Map<string, Channel>();
 
-        // 1. Add all from Firestore
+        // 1. Add all from Firestore with auto-upgrade for stale test/placeholder streams
+        const toUpdateInFirestore: Channel[] = [];
         snap.docs.forEach((docSnap) => {
           const fsData = docSnap.data() as Channel;
           const matchServer = serverChannels.find((s) => s.id === docSnap.id);
-          mergedMap.set(docSnap.id, {
+
+          let streamUrl = fsData.streamUrl;
+          let name = fsData.name;
+          let logo = fsData.logo;
+
+          // Auto-upgrade stale dummy/test streams or outdated streams in Firestore to current active streams
+          const isStalePlaceholder = !streamUrl || 
+            streamUrl.includes('test-streams.mux.dev') || 
+            streamUrl.includes('dwamdstream102') || 
+            streamUrl.includes('static.france24.com') ||
+            streamUrl.includes('rbmn-live') ||
+            streamUrl.includes('103.58.160.157') ||
+            streamUrl.includes('ntv1.akamaized');
+
+          const hasNewerServerStream = matchServer?.streamUrl && (
+            matchServer.streamUrl.includes('202.150.172.59') ||
+            matchServer.streamUrl.includes('dens.tv') ||
+            matchServer.streamUrl.includes('detik.com')
+          ) && streamUrl !== matchServer.streamUrl;
+
+          if ((isStalePlaceholder || hasNewerServerStream) && matchServer?.streamUrl) {
+            streamUrl = matchServer.streamUrl;
+            if (matchServer.logo) logo = matchServer.logo;
+            if (matchServer.name) name = matchServer.name;
+          }
+
+          const resolvedChannel: Channel = {
             ...(matchServer || {}),
             ...fsData,
+            name,
+            logo,
+            streamUrl,
             id: docSnap.id,
             number: Number(fsData.number) || 1,
-            fps: Number(fsData.fps) || 30,
-            bitrateKbps: Number(fsData.bitrateKbps) || 2500,
-          });
+            fps: Number(fsData.fps) || 50,
+            bitrateKbps: Number(fsData.bitrateKbps) || 3200,
+          };
+
+          if (streamUrl !== fsData.streamUrl) {
+            toUpdateInFirestore.push(resolvedChannel);
+          }
+
+          mergedMap.set(docSnap.id, resolvedChannel);
         });
+
+        // Background update upgraded channels to Firestore
+        if (toUpdateInFirestore.length > 0) {
+          const updateBatch = writeBatch(db);
+          toUpdateInFirestore.forEach((upCh) => {
+            const { epgCurrent, epgNext, ...saveData } = upCh;
+            updateBatch.set(doc(db, 'channels', upCh.id), {
+              ...saveData,
+              updatedAt: new Date().toISOString(),
+            }, { merge: true });
+          });
+          updateBatch.commit().catch((e) => console.warn('Background Firestore upgrade note:', e));
+        }
 
         // 2. Also keep any server channels not yet in Firestore
         serverChannels.forEach((sc) => {
@@ -314,5 +363,57 @@ export async function syncAllChannelsToDatabase(channels: Channel[]): Promise<{ 
   }
 
   return { count: channels.length };
+}
+
+export async function fetchProviderChannels(provider: 'all' | 'vidio' | 'rctiplus' = 'all'): Promise<{
+  vidio?: Channel[];
+  rctiplus?: Channel[];
+  channels: Channel[];
+}> {
+  const res = await fetch(`${API_BASE}/proxy/providers/channels?provider=${provider}`);
+  if (!res.ok) throw new Error('Gagal mengambil daftar saluran provider');
+  return res.json();
+}
+
+export async function importProviderChannels(provider: 'all' | 'vidio' | 'rctiplus' = 'all'): Promise<{
+  success: boolean;
+  message: string;
+  importedCount: number;
+  totalChannels: number;
+  channels: Channel[];
+}> {
+  const res = await fetch(`${API_BASE}/proxy/providers/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ provider }),
+  });
+  if (!res.ok) throw new Error('Gagal mengimpor saluran provider');
+  const data = await res.json();
+
+  // Also sync newly imported channels to Cloud Firestore database
+  if (data.channels && data.channels.length > 0) {
+    try {
+      await syncAllChannelsToDatabase(data.channels);
+    } catch (fsErr) {
+      console.warn('Gagal sinkronisasi saluran provider ke Firestore:', fsErr);
+    }
+  }
+
+  return data;
+}
+
+export async function resolveVidioRctiUrl(url: string): Promise<{
+  success: boolean;
+  inputUrl: string;
+  channelName?: string;
+  provider?: 'vidio' | 'rctiplus';
+  logo?: string;
+  streamUrl: string;
+  proxyUrl: string;
+  note?: string;
+}> {
+  const res = await fetch(`${API_BASE}/proxy/resolve?url=${encodeURIComponent(url)}`);
+  if (!res.ok) throw new Error('Gagal meresolusi URL');
+  return res.json();
 }
 

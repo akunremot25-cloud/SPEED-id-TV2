@@ -1,5 +1,4 @@
-import React from 'react';
-import { Tv, Star, X, Check, Pencil } from 'lucide-react';
+import { Tv, Star, X, Check, Pencil, Radio } from 'lucide-react';
 import { Channel } from '../types/tvheadend';
 
 interface MobileQuickDrawerProps {
@@ -9,6 +8,7 @@ interface MobileQuickDrawerProps {
   onClose: () => void;
   onSelectChannel: (channel: Channel) => void;
   onEditChannel?: (channel: Channel) => void;
+  onOpenStreamingProxy?: () => void;
   isClientMode?: boolean;
 }
 
@@ -19,6 +19,7 @@ export const MobileQuickDrawer: React.FC<MobileQuickDrawerProps> = ({
   onClose,
   onSelectChannel,
   onEditChannel,
+  onOpenStreamingProxy,
   isClientMode = false,
 }) => {
   if (!isOpen) return null;
@@ -36,14 +37,28 @@ export const MobileQuickDrawer: React.FC<MobileQuickDrawerProps> = ({
           <div className="flex items-center gap-2">
             <Tv className="w-4 h-4 text-blue-400" />
             <h3 className="font-bold text-white text-sm">Ganti Saluran Cepat</h3>
-            <span className="text-xs text-slate-400">({channels.length} Saluran)</span>
+            <span className="text-xs text-slate-400">({channels.length})</span>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenStreamingProxy && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenStreamingProxy();
+                }}
+                className="px-2 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <Radio className="w-3 h-3 text-indigo-400" />
+                <span>Proxy Hub</span>
+              </button>
+            )}
+            <button 
+              onClick={onClose}
+              className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* Channels List */}

@@ -47,152 +47,210 @@ interface ServerChannel {
 
 const DEFAULT_CHANNELS: ServerChannel[] = [
   {
-    id: 'tvri-nasional',
+    id: 'rcti-hd-ip',
     number: 1,
-    name: 'TVRI Nasional',
+    name: 'RCTI HD (1080p)',
     category: 'Nasional',
-    logo: 'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    backupUrls: ['https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8'],
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/rcti.png',
+    streamUrl: 'http://202.150.172.59/RCTIHD/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h201/01.m3u8'],
     quality: '1080p',
     fps: 50,
     bitrateKbps: 3200,
-    audioCodec: 'AAC-LC',
-    videoCodec: 'H.264',
-    isFavorite: true,
-  },
-  {
-    id: 'tvri-world',
-    number: 2,
-    name: 'TVRI World (HD)',
-    category: 'Nasional',
-    logo: 'https://images.unsplash.com/photo-1522869635100-9f4c5e86aa37?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
-    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
-    quality: '720p',
-    fps: 50,
-    bitrateKbps: 2400,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
     isFavorite: true,
   },
   {
-    id: 'dw-english',
-    number: 3,
-    name: 'DW English Live',
-    category: 'Berita',
-    logo: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8',
-    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    id: 'gtv-hd-ip',
+    number: 2,
+    name: 'GTV HD (1080p)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/gtv.png',
+    streamUrl: 'http://202.150.172.59/GTVHD/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h203/01.m3u8'],
     quality: '1080p',
-    fps: 25,
+    fps: 50,
     bitrateKbps: 3000,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
     isFavorite: true,
   },
   {
-    id: 'france24-en',
+    id: 'indosiar-hd-ip',
+    number: 3,
+    name: 'Indosiar HD (1080p)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/indosiar.png',
+    streamUrl: 'http://202.150.172.59/Indosiar/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h207/01.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'tvri-ip',
     number: 4,
-    name: 'France 24 Live HD',
-    category: 'Berita',
-    logo: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://static.france24.com/live/F24_EN_LO_HLS/live_tv.m3u8',
-    backupUrls: ['https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8'],
-    quality: '720p',
-    fps: 30,
-    bitrateKbps: 2200,
+    name: 'TVRI (1080p)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/tvri.png',
+    streamUrl: 'http://202.150.172.59/TVRI/index.m3u8',
+    backupUrls: ['https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
     isFavorite: true,
   },
   {
-    id: 'redbull-tv',
+    id: 'tvri-sport-ip',
     number: 5,
-    name: 'Red Bull Action Sports',
+    name: 'TVRI Sport (1080p)',
     category: 'Olahraga',
-    logo: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://rbmn-live.akamaized.net/hls/live/590964/BoRB-AT/master.m3u8',
-    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/tvrisport.png',
+    streamUrl: 'http://202.150.172.59/TVRISport/index.m3u8',
+    backupUrls: ['https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8'],
     quality: '1080p',
-    fps: 60,
-    bitrateKbps: 4500,
+    fps: 50,
+    bitrateKbps: 3200,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
     isFavorite: true,
   },
   {
-    id: 'nasa-tv',
+    id: 'rajawali-tv-ip',
     number: 6,
-    name: 'NASA TV Live ISS & Space',
-    category: 'Mancanegara',
-    logo: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8',
-    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    name: 'Rajawali TV (1080p)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/rtv.png',
+    streamUrl: 'http://202.150.172.59/RajawaliTV/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h10/01.m3u8'],
     quality: '1080p',
-    fps: 30,
-    bitrateKbps: 3500,
+    fps: 50,
+    bitrateKbps: 3000,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
-    isFavorite: false,
+    isFavorite: true,
   },
   {
-    id: 'aljazeera-en',
+    id: 'magna-channel-ip',
     number: 7,
-    name: 'Al Jazeera English HD',
-    category: 'Berita',
-    logo: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://live-hls-web-aje.getaj.net/AJE/03.m3u8',
-    backupUrls: ['https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8'],
-    quality: '720p',
-    fps: 25,
-    bitrateKbps: 2000,
+    name: 'Magna Channel (1080p)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/magnachannel.png',
+    streamUrl: 'http://202.150.172.59/MagnaChannel/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h210/01.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3000,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
-    isFavorite: false,
+    isFavorite: true,
   },
   {
-    id: 'sea-today',
+    id: 'vtv-hd-ip',
     number: 8,
-    name: 'SEA Today News Indonesia',
-    category: 'Berita',
-    logo: 'https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
-    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
-    quality: '720p',
-    fps: 30,
-    bitrateKbps: 2100,
+    name: 'VTV HD (1080p)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/vtv.png',
+    streamUrl: 'http://202.150.172.59/VTVHD/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h212/01.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3000,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
-    isFavorite: false,
+    isFavorite: true,
   },
   {
-    id: 'big-buck-bunny-test',
+    id: 'cnn-indonesia-detik',
     number: 9,
-    name: 'Tvheadend Mux 1 (HLS Mobile Test)',
-    category: 'Test',
-    logo: 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+    name: 'CNN Indonesia',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/cnnindonesia.png',
+    streamUrl: 'https://video.detik.com/livecnn/smil:cnntv/chunklist_w268557525_b384000_sleng.m3u8',
+    backupUrls: ['https://live.cnnindonesia.com/transtv/smil:transtv/chunklist_w2685575259_b744100_sleng.m3u8'],
     quality: '1080p',
-    fps: 30,
-    bitrateKbps: 2800,
+    fps: 50,
+    bitrateKbps: 3840,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
-    isFavorite: false,
+    isFavorite: true,
   },
   {
-    id: 'tears-of-steel-test',
+    id: 'cnbc-indonesia-detik',
     number: 10,
-    name: 'Tvheadend Transcoder Mux 2 (Adaptive)',
-    category: 'Test',
-    logo: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=128&auto=format&fit=crop&q=80',
-    streamUrl: 'https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8',
+    name: 'CNBC Indonesia',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/cnbcindonesia.png',
+    streamUrl: 'https://video.detik.com/livecnbc/smil:cnbctv/chunklist_w1279679883_b384000_sleng.m3u8',
+    backupUrls: ['https://live.cnbcindonesia.com/livecnbc/smil:cnbctv/chunklist.m3u8'],
     quality: '1080p',
-    fps: 24,
-    bitrateKbps: 3400,
+    fps: 50,
+    bitrateKbps: 3840,
     audioCodec: 'AAC',
     videoCodec: 'H.264',
-    isFavorite: false,
+    isFavorite: true,
+  },
+  {
+    id: 'sctv-hd',
+    number: 11,
+    name: 'SCTV',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/sctv.png',
+    streamUrl: 'http://202.150.172.59/SCTV/tracks-v1a1/mono.m3u8',
+    backupUrls: [
+      'http://202.150.172.59/SCTV/index.m3u8',
+      'https://op-flashcon-digdayahd-1.dens.tv/h/h204/01.m3u8',
+    ],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'antv-hd',
+    number: 12,
+    name: 'ANTV HD (Realtime Vidio)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png',
+    streamUrl: 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true',
+    backupUrls: [
+      'https://m.vidio.com/live/782-antv',
+      'https://www.vidio.com/live/782-antv',
+      'http://202.150.172.59/VTVHD/index.m3u8',
+      'http://103.58.160.157:8278/720-ANTV/playlist.m3u8',
+    ],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'mnctv-hd',
+    number: 13,
+    name: 'MNCTV HD (1080p)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/mnctv.png',
+    streamUrl: 'http://202.150.172.59/MNCTV/index.m3u8',
+    backupUrls: [
+      'https://op-flashcon-digdayahd-1.dens.tv/h/h202/01.m3u8',
+      'http://202.150.172.59/MNCTV/tracks-v1a1/mono.m3u8',
+    ],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
   }
 ];
 
@@ -213,8 +271,46 @@ function loadChannelsFromDb(): ServerChannel[] {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
       const parsed = JSON.parse(content);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        console.log(`[Database] Memuat ${parsed.length} saluran dari ${DB_FILE}`);
-        return parsed;
+        let modified = false;
+        const channelList = [...parsed];
+
+        DEFAULT_CHANNELS.forEach((defCh) => {
+          const existingIdx = channelList.findIndex(
+            (c) => c.id === defCh.id || c.number === defCh.number
+          );
+
+          if (existingIdx >= 0) {
+            if (channelList[existingIdx].streamUrl !== defCh.streamUrl || channelList[existingIdx].name !== defCh.name) {
+              channelList[existingIdx] = {
+                ...channelList[existingIdx],
+                id: defCh.id,
+                name: defCh.name,
+                logo: defCh.logo,
+                streamUrl: defCh.streamUrl,
+                backupUrls: defCh.backupUrls,
+                quality: defCh.quality,
+                category: defCh.category,
+                number: defCh.number,
+                isFavorite: true,
+              };
+              modified = true;
+            }
+          } else {
+            channelList.push(defCh);
+            modified = true;
+          }
+        });
+
+        channelList.sort((a, b) => (a.number || 0) - (b.number || 0));
+
+        if (modified) {
+          console.log('[Database] Sinkronisasi 10 saluran m3u8 pilihan user ke database');
+          saveChannelsToDb(channelList);
+          return channelList;
+        }
+
+        console.log(`[Database] Memuat ${channelList.length} saluran dari ${DB_FILE}`);
+        return channelList;
       }
     }
   } catch (err) {
@@ -618,13 +714,505 @@ app.post('/api/tvheadend/import-m3u', (req: Request, res: Response) => {
   res.json({ success: true, importedCount, totalChannels: channels.length });
 });
 
+// Curated list of all channels from Vidio.com and RCTI+
+const VIDIO_PROVIDER_CHANNELS: ServerChannel[] = [
+  {
+    id: 'vidio-sctv',
+    number: 101,
+    name: 'SCTV HD (Vidio)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/sctv.png',
+    streamUrl: 'http://202.150.172.59/SCTV/tracks-v1a1/mono.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h204/01.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'vidio-indosiar',
+    number: 102,
+    name: 'Indosiar HD (Vidio)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/indosiar.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h207/01.m3u8',
+    backupUrls: ['https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'vidio-moji',
+    number: 103,
+    name: 'Moji TV HD (Vidio)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/moji.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h206/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 2800,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'vidio-mentari',
+    number: 104,
+    name: 'Mentari TV HD (Vidio)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/mentari.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h208/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'vidio-kompas',
+    number: 105,
+    name: 'Kompas TV HD (Vidio)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/kompastv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h210/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 30,
+    bitrateKbps: 2800,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'vidio-metro',
+    number: 106,
+    name: 'Metro TV HD (Vidio)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/metrotv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h205/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 30,
+    bitrateKbps: 2800,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'vidio-tvone',
+    number: 107,
+    name: 'TV One HD (Vidio)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/tvone.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h209/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 30,
+    bitrateKbps: 2800,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'vidio-btv',
+    number: 108,
+    name: 'BTV HD (Vidio)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/btv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h211/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'vidio-champions-1',
+    number: 109,
+    name: 'Champions TV 1 (Vidio)',
+    category: 'Olahraga',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/championstv1.png',
+    streamUrl: 'https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3500,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'vidio-antv',
+    number: 110,
+    name: 'ANTV HD (Realtime Vidio)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png',
+    streamUrl: 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true',
+    backupUrls: ['https://m.vidio.com/live/782-antv', 'https://www.vidio.com/live/782-antv'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+];
+
+const RCTIPLUS_PROVIDER_CHANNELS: ServerChannel[] = [
+  {
+    id: 'rcti-plus-rcti',
+    number: 201,
+    name: 'RCTI HD (RCTI+)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/rcti.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h201/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'rcti-plus-mnctv',
+    number: 202,
+    name: 'MNCTV HD (RCTI+)',
+    category: 'Nasional',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/mnctv.png',
+    streamUrl: 'http://202.150.172.59/MNCTV/index.m3u8',
+    backupUrls: ['https://op-flashcon-digdayahd-1.dens.tv/h/h202/01.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'rcti-plus-gtv',
+    number: 203,
+    name: 'GTV HD (RCTI+)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/gtv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h203/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 50,
+    bitrateKbps: 3000,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'rcti-plus-inews',
+    number: 204,
+    name: 'iNews TV HD (RCTI+)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/inews.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h213/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '1080p',
+    fps: 30,
+    bitrateKbps: 2800,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'rcti-plus-sindonews',
+    number: 205,
+    name: 'Sindonews TV (RCTI+)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/sindonewstv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h214/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'rcti-plus-idx',
+    number: 206,
+    name: 'IDX Channel HD (RCTI+)',
+    category: 'Berita',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/idxchannel.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h215/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2000,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'rcti-plus-celebrities',
+    number: 207,
+    name: 'Celebrities TV (RCTI+)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/celebritiestv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h216/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2000,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'rcti-plus-oktv',
+    number: 208,
+    name: 'OK TV HD (RCTI+)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/oktv.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h217/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+  {
+    id: 'rcti-plus-visionprime',
+    number: 209,
+    name: 'Vision Prime HD (RCTI+)',
+    category: 'Hiburan',
+    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/visionprime.png',
+    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h218/01.m3u8',
+    backupUrls: ['https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8'],
+    quality: '720p',
+    fps: 30,
+    bitrateKbps: 2200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: false,
+  },
+];
+
+// Helper to resolve Vidio.com and RCTI+ links to playable HLS streams
+function resolveVidioOrRctiUrl(inputUrl: string): { streamUrl: string; provider: 'vidio' | 'rctiplus'; channelName: string; logo: string } | null {
+  const lower = inputUrl.toLowerCase().trim();
+
+  // If input is an explicit stream from an IP, detik.com, or already a full direct m3u8 URL, do NOT override it
+  if (lower.includes('202.150.172.59') || lower.includes('detik.com') || lower.includes('dens.tv')) {
+    return null;
+  }
+
+  // Only resolve Vidio or RCTI web page URLs or explicit short names
+  const isVidioWeb = lower.includes('vidio.com');
+  const isRctiWeb = lower.includes('rctiplus.com');
+  const isShortName = !lower.includes('http://') && !lower.includes('https://');
+
+  if (!isVidioWeb && !isRctiWeb && !isShortName) {
+    return null;
+  }
+  
+  // Vidio checks
+  if (lower.includes('sctv') || lower.includes('/live/204') || lower.includes('204-sctv')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h204/01.m3u8', provider: 'vidio', channelName: 'SCTV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/sctv.png' };
+  }
+  if (lower.includes('indosiar') || lower.includes('/live/205') || lower.includes('205-indosiar')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h207/01.m3u8', provider: 'vidio', channelName: 'Indosiar HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/indosiar.png' };
+  }
+  if (lower.includes('moji') || lower.includes('/live/206') || lower.includes('206-moji')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h206/01.m3u8', provider: 'vidio', channelName: 'Moji TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/moji.png' };
+  }
+  if (lower.includes('mentari') || lower.includes('/live/8106') || lower.includes('8106-mentari')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h208/01.m3u8', provider: 'vidio', channelName: 'Mentari TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/mentari.png' };
+  }
+  if (lower.includes('kompas') || lower.includes('/live/874') || lower.includes('874-kompas')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h210/01.m3u8', provider: 'vidio', channelName: 'Kompas TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/kompastv.png' };
+  }
+  if (lower.includes('metro') || lower.includes('/live/777') || lower.includes('777-metro')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h205/01.m3u8', provider: 'vidio', channelName: 'Metro TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/metrotv.png' };
+  }
+  if (lower.includes('antv') || lower.includes('782-antv') || lower.includes('live782-antv') || lower.includes('antvklik') || lower.includes('/live/antv') || lower === 'antv') {
+    return { 
+      streamUrl: 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true', 
+      provider: 'vidio', 
+      channelName: 'ANTV HD (Realtime Vidio)', 
+      logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png' 
+    };
+  }
+  if (lower.includes('tvone') || lower.includes('/live/783') || lower.includes('783-tvone') || lower.includes('782-tvone')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h209/01.m3u8', provider: 'vidio', channelName: 'TV One HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/tvone.png' };
+  }
+  if (lower.includes('btv') || lower.includes('/live/8861') || lower.includes('8861-btv')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h211/01.m3u8', provider: 'vidio', channelName: 'BTV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/btv.png' };
+  }
+  if (lower.includes('beritasatu') || lower.includes('/live/5415')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h212/01.m3u8', provider: 'vidio', channelName: 'BeritaSatu HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/beritasatu.png' };
+  }
+
+  // RCTI+ checks
+  if (lower.includes('/tv/rcti') || lower.includes('/rcti') || lower.includes('rcti-hd') || lower === 'rcti' || (lower.includes('rcti') && !lower.includes('mnctv') && !lower.includes('gtv') && !lower.includes('inews') && !lower.includes('sindonews') && !lower.includes('idx') && !lower.includes('celebrities') && !lower.includes('oktv') && !lower.includes('visionprime'))) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h201/01.m3u8', provider: 'rctiplus', channelName: 'RCTI HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/rcti.png' };
+  }
+  if (lower.includes('mnctv') || lower.includes('/tv/mnctv')) {
+    return { streamUrl: 'http://202.150.172.59/MNCTV/index.m3u8', provider: 'rctiplus', channelName: 'MNCTV HD (1080p)', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/mnctv.png' };
+  }
+  if (lower.includes('gtv') || lower.includes('/tv/gtv')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h203/01.m3u8', provider: 'rctiplus', channelName: 'GTV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/gtv.png' };
+  }
+  if (lower.includes('inews') || lower.includes('/tv/inews')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h213/01.m3u8', provider: 'rctiplus', channelName: 'iNews TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/inews.png' };
+  }
+  if (lower.includes('sindonews') || lower.includes('/tv/sindonews')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h214/01.m3u8', provider: 'rctiplus', channelName: 'Sindonews TV', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/sindonewstv.png' };
+  }
+  if (lower.includes('idx') || lower.includes('/tv/idx')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h215/01.m3u8', provider: 'rctiplus', channelName: 'IDX Channel HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/idxchannel.png' };
+  }
+  if (lower.includes('celebrities') || lower.includes('/tv/celebrities')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h216/01.m3u8', provider: 'rctiplus', channelName: 'Celebrities TV', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/celebritiestv.png' };
+  }
+  if (lower.includes('oktv') || lower.includes('ok-tv') || lower.includes('/tv/oktv')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h217/01.m3u8', provider: 'rctiplus', channelName: 'OK TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/oktv.png' };
+  }
+  if (lower.includes('visionprime') || lower.includes('vision-prime') || lower.includes('/tv/vision-prime')) {
+    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h218/01.m3u8', provider: 'rctiplus', channelName: 'Vision Prime HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/visionprime.png' };
+  }
+
+  return null;
+}
+
+// REST API: Get all Vidio and RCTI+ channels
+app.get('/api/proxy/providers/channels', (req: Request, res: Response) => {
+  const provider = req.query.provider as string || 'all';
+  if (provider === 'vidio') {
+    res.json({ provider: 'vidio', channels: VIDIO_PROVIDER_CHANNELS });
+  } else if (provider === 'rctiplus') {
+    res.json({ provider: 'rctiplus', channels: RCTIPLUS_PROVIDER_CHANNELS });
+  } else {
+    res.json({
+      provider: 'all',
+      vidio: VIDIO_PROVIDER_CHANNELS,
+      rctiplus: RCTIPLUS_PROVIDER_CHANNELS,
+      channels: [...VIDIO_PROVIDER_CHANNELS, ...RCTIPLUS_PROVIDER_CHANNELS],
+    });
+  }
+});
+
+// REST API: Import Vidio and RCTI+ channels to current database
+app.post('/api/proxy/providers/import', (req: Request, res: Response) => {
+  const provider = req.body.provider || 'all';
+  let toImport: ServerChannel[] = [];
+  if (provider === 'vidio') {
+    toImport = [...VIDIO_PROVIDER_CHANNELS];
+  } else if (provider === 'rctiplus') {
+    toImport = [...RCTIPLUS_PROVIDER_CHANNELS];
+  } else {
+    toImport = [...VIDIO_PROVIDER_CHANNELS, ...RCTIPLUS_PROVIDER_CHANNELS];
+  }
+
+  let addedCount = 0;
+  for (const newCh of toImport) {
+    const existingIndex = channels.findIndex((c) => c.id === newCh.id);
+    if (existingIndex >= 0) {
+      channels[existingIndex] = { ...channels[existingIndex], ...newCh };
+    } else {
+      channels.push({
+        ...newCh,
+        number: channels.length + 1,
+      });
+      addedCount++;
+    }
+  }
+
+  saveChannelsToDb(channels);
+  res.json({
+    success: true,
+    message: `${toImport.length} saluran Vidio & RCTI+ berhasil diproses (${addedCount} baru ditambahkan).`,
+    importedCount: toImport.length,
+    totalChannels: channels.length,
+    channels,
+  });
+});
+
+// REST API: Resolve Vidio / RCTI+ URL to direct stream & proxy stream
+app.get('/api/proxy/resolve', (req: Request, res: Response) => {
+  const url = req.query.url as string;
+  if (!url) {
+    res.status(400).json({ error: 'Parameter url is required' });
+    return;
+  }
+
+  const resolved = resolveVidioOrRctiUrl(url);
+  const host = req.get('host') || 'localhost:3000';
+  const protocol = req.protocol;
+  const baseUrl = `${protocol}://${host}`;
+
+  if (resolved) {
+    res.json({
+      success: true,
+      inputUrl: url,
+      channelName: resolved.channelName,
+      provider: resolved.provider,
+      logo: resolved.logo,
+      streamUrl: resolved.streamUrl,
+      proxyUrl: `${baseUrl}/api/proxy/stream?url=${encodeURIComponent(resolved.streamUrl)}`,
+    });
+  } else {
+    res.json({
+      success: false,
+      inputUrl: url,
+      streamUrl: url,
+      proxyUrl: `${baseUrl}/api/proxy/stream?url=${encodeURIComponent(url)}`,
+      note: 'URL diteruskan langsung ke streaming proxy.',
+    });
+  }
+});
+
 // High-Performance Streaming Proxy & Rewriter for Mobile HLS
 // Rewrites nested playlist & chunk URLs so relative paths don't fail CORS or 404 on mobile browsers
 app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> => {
-  const rawUrl = req.query.url;
+  let rawUrl = req.query.url;
   if (!rawUrl || typeof rawUrl !== 'string') {
     res.status(400).send('Parameter url is required');
     return;
+  }
+
+  // Auto-resolve if user supplied a Vidio, RCTI+, or token-locked ANTV URL
+  if (rawUrl.includes('782-antv') || rawUrl.includes('live782-antv') || (rawUrl.includes('vidio.com') && rawUrl.includes('antv'))) {
+    res.redirect('https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true');
+    return;
+  } else if (rawUrl.includes('/embed') && rawUrl.includes('vidio.com')) {
+    res.redirect(rawUrl);
+    return;
+  } else if (rawUrl.includes('103.58.160.157') && (rawUrl.includes('720-ANTV') || rawUrl.includes('ANTV'))) {
+    const isVlcOrIptv = (req.headers['user-agent'] || '').toLowerCase().includes('vlc') || (req.headers['user-agent'] || '').toLowerCase().includes('tivimate');
+    if (isVlcOrIptv) {
+      rawUrl = 'http://202.150.172.59/VTVHD/index.m3u8';
+    } else {
+      res.redirect('https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true');
+      return;
+    }
+  } else {
+    const resolved = resolveVidioOrRctiUrl(rawUrl);
+    if (resolved) {
+      if (resolved.streamUrl.includes('/embed') || resolved.streamUrl.includes('782-antv')) {
+        res.redirect(resolved.streamUrl);
+        return;
+      }
+      rawUrl = resolved.streamUrl;
+    }
   }
 
   let targetUrl: URL;
@@ -637,10 +1225,43 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
 
   try {
     const headersToForward: Record<string, string> = {
-      'User-Agent': 'Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36 VLC/3.5.4',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36',
       'Accept': '*/*',
       'Accept-Encoding': 'identity',
+      'X-Forwarded-For': '180.252.1.1',
+      'X-Real-IP': '180.252.1.1',
     };
+
+    // Auto-spoof Referer, Origin, and GeoIP headers
+    const hostname = targetUrl.hostname.toLowerCase();
+    const href = targetUrl.href.toLowerCase();
+
+    if (hostname.includes('103.58.160.157') || href.includes('103.58.160.157')) {
+      headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36';
+      headersToForward['X-Forwarded-For'] = '180.252.1.1';
+      headersToForward['X-Real-IP'] = '180.252.1.1';
+      headersToForward['Referer'] = 'http://103.58.160.157:8278/';
+    } else if (hostname.includes('202.150.172.59')) {
+      headersToForward['User-Agent'] = 'VLC/3.0.18 LibVLC/3.0.18';
+      headersToForward['X-Forwarded-For'] = '180.252.1.1';
+      headersToForward['X-Real-IP'] = '180.252.1.1';
+    } else if (hostname.includes('detik.com') || href.includes('detik.com')) {
+      headersToForward['Referer'] = 'https://video.detik.com/';
+      headersToForward['Origin'] = 'https://video.detik.com';
+      headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
+    } else if (hostname.includes('vidio') || href.includes('vidio')) {
+      headersToForward['Referer'] = 'https://www.vidio.com/';
+      headersToForward['Origin'] = 'https://www.vidio.com';
+      headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+    } else if (hostname.includes('rcti') || href.includes('rcti') || hostname.includes('visionplus')) {
+      headersToForward['Referer'] = 'https://www.rctiplus.com/';
+      headersToForward['Origin'] = 'https://www.rctiplus.com';
+      headersToForward['User-Agent'] = 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Mobile Safari/537.36';
+    } else if (hostname.includes('dens.tv') || hostname.includes('densplay')) {
+      headersToForward['Referer'] = 'https://www.dens.tv/';
+      headersToForward['Origin'] = 'https://www.dens.tv';
+      headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
+    }
 
     if (req.headers.range) {
       headersToForward['Range'] = req.headers.range;
@@ -649,13 +1270,47 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12000);
 
-    const upstreamResponse = await fetch(targetUrl.href, {
+    let upstreamResponse = await fetch(targetUrl.href, {
       method: 'GET',
       headers: headersToForward,
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
+
+    // Failover fallback: if upstream stream returns 401/403/404 or fails, fallback to active working stream
+    if (!upstreamResponse.ok && (upstreamResponse.status === 401 || upstreamResponse.status === 403 || upstreamResponse.status === 404 || upstreamResponse.status >= 500)) {
+      const fallbackParam = req.query.fallback as string;
+      let alternativeUrl = fallbackParam;
+
+      if (!alternativeUrl && (rawUrl.includes('103.58.160.157') || rawUrl.includes('720-ANTV') || rawUrl.toLowerCase().includes('antv'))) {
+        alternativeUrl = 'http://202.150.172.59/VTVHD/index.m3u8';
+      }
+
+      if (alternativeUrl && alternativeUrl !== targetUrl.href) {
+        try {
+          const altTarget = new URL(alternativeUrl);
+          const altHeaders: Record<string, string> = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Referer': altTarget.hostname.includes('dens.tv') ? 'https://www.dens.tv/' : '',
+          };
+          const altController = new AbortController();
+          const altTimeout = setTimeout(() => altController.abort(), 8000);
+          const altResp = await fetch(altTarget.href, {
+            method: 'GET',
+            headers: altHeaders,
+            signal: altController.signal,
+          });
+          clearTimeout(altTimeout);
+          if (altResp.ok) {
+            upstreamResponse = altResp;
+            targetUrl = altTarget;
+          }
+        } catch (e) {
+          console.warn('[Proxy] Failover fetch note:', e);
+        }
+      }
+    }
 
     const contentType = upstreamResponse.headers.get('content-type') || '';
     const isM3U8 =

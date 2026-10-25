@@ -13,6 +13,7 @@ import { TvheadendServerDashboard } from './components/TvheadendServerDashboard'
 import { AddChannelModal } from './components/AddChannelModal';
 import { EditChannelModal } from './components/EditChannelModal';
 import { StreamDiagnosticsModal } from './components/StreamDiagnosticsModal';
+import { StreamingProxyModal } from './components/StreamingProxyModal';
 import { MobileQuickDrawer } from './components/MobileQuickDrawer';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
@@ -61,6 +62,7 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [editingChannel, setEditingChannel] = useState<Channel | null>(null);
   const [isDiagnosticsModalOpen, setIsDiagnosticsModalOpen] = useState<boolean>(false);
+  const [isStreamingProxyOpen, setIsStreamingProxyOpen] = useState<boolean>(false);
   const [isQuickDrawerOpen, setIsQuickDrawerOpen] = useState<boolean>(false);
 
   // Load channels on mount
@@ -194,6 +196,19 @@ export default function App() {
             <RefreshCw className="w-4 h-4" />
           </button>
 
+          {/* DEDICATED STREAMING PROXY BUTTON - ALWAYS PROMINENTLY VISIBLE */}
+          <button
+            onClick={() => setIsStreamingProxyOpen(true)}
+            className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-900/70 to-blue-900/70 hover:from-indigo-800 hover:to-blue-800 text-indigo-100 hover:text-white border border-indigo-500/50 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-indigo-950/40 active:scale-95 transition-all"
+            title="Buka Streaming Proxy Hub, Uji Stream & Playlist M3U"
+          >
+            <Radio className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+            <span>Streaming Proxy</span>
+            <span className="hidden sm:inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              CORS Bypass
+            </span>
+          </button>
+
           {/* Client Watching Mode specific actions */}
           {isClientMode ? (
             <>
@@ -323,6 +338,7 @@ export default function App() {
                 onSelectChannel={handleSelectChannel}
                 onOpenChannelDrawer={() => setIsQuickDrawerOpen(true)}
                 onOpenDiagnostics={isClientMode ? undefined : () => setIsDiagnosticsModalOpen(true)}
+                onOpenStreamingProxy={() => setIsStreamingProxyOpen(true)}
                 isClientMode={isClientMode}
               />
             ) : (
@@ -469,14 +485,36 @@ export default function App() {
             onEditChannel={isClientMode ? undefined : (ch) => setEditingChannel(ch)}
             onOpenAddModal={isClientMode ? undefined : () => setIsAddModalOpen(true)}
             onOpenServerDashboard={isClientMode ? undefined : () => setIsServerModalOpen(true)}
+            onOpenStreamingProxy={() => setIsStreamingProxyOpen(true)}
             isClientMode={isClientMode}
           />
         </section>
       </main>
 
-      {/* Modals (Only rendered when opened, typically in Admin Mode) */}
+      {/* Modals */}
+      {isStreamingProxyOpen && (
+        <StreamingProxyModal
+          channels={channels}
+          selectedChannel={selectedChannel}
+          onClose={() => setIsStreamingProxyOpen(false)}
+          onSelectChannel={handleSelectChannel}
+          onChannelsUpdated={(updatedChannels) => {
+            setChannels(updatedChannels);
+            if (updatedChannels.length > 0 && !selectedChannel) {
+              handleSelectChannel(updatedChannels[0]);
+            }
+          }}
+        />
+      )}
+
       {isServerModalOpen && (
-        <TvheadendServerDashboard onClose={() => setIsServerModalOpen(false)} />
+        <TvheadendServerDashboard
+          onClose={() => setIsServerModalOpen(false)}
+          onOpenStreamingProxy={() => {
+            setIsServerModalOpen(false);
+            setIsStreamingProxyOpen(true);
+          }}
+        />
       )}
 
       {isAddModalOpen && (
@@ -523,6 +561,7 @@ export default function App() {
         onClose={() => setIsQuickDrawerOpen(false)}
         onSelectChannel={handleSelectChannel}
         onEditChannel={isClientMode ? undefined : (ch) => setEditingChannel(ch)}
+        onOpenStreamingProxy={() => setIsStreamingProxyOpen(true)}
         isClientMode={isClientMode}
       />
 

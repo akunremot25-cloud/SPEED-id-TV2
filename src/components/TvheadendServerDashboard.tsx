@@ -11,9 +11,10 @@ import {
 
 interface TvheadendServerDashboardProps {
   onClose: () => void;
+  onOpenStreamingProxy?: () => void;
 }
 
-export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> = ({ onClose }) => {
+export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> = ({ onClose, onOpenStreamingProxy }) => {
   const [tuners, setTuners] = useState<TunerStatus[]>([]);
   const [config, setConfig] = useState<TvheadendServerConfig>({
     mode: 'standalone',
@@ -129,12 +130,26 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            {onOpenStreamingProxy && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenStreamingProxy();
+                }}
+                className="px-2.5 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all"
+              >
+                <Radio className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Buka Streaming Proxy</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* Modal Body */}

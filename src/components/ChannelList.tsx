@@ -15,6 +15,7 @@ interface ChannelListProps {
   onEditChannel?: (channel: Channel) => void;
   onOpenAddModal?: () => void;
   onOpenServerDashboard?: () => void;
+  onOpenStreamingProxy?: () => void;
   isClientMode?: boolean;
 }
 
@@ -27,12 +28,26 @@ export const ChannelList: React.FC<ChannelListProps> = ({
   onEditChannel,
   onOpenAddModal,
   onOpenServerDashboard,
+  onOpenStreamingProxy,
   isClientMode = false,
-}) => {
+}: ChannelListProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
+  const [copiedProxyId, setCopiedProxyId] = useState<string | null>(null);
+
+  const handleCopyProxyUrl = (channel: Channel) => {
+    if (typeof window === 'undefined') return;
+    const proxyUrl = `${window.location.origin}/api/proxy/stream?url=${encodeURIComponent(channel.streamUrl)}`;
+    navigator.clipboard.writeText(proxyUrl);
+    setCopiedProxyId(channel.id);
+    setSyncNotice(`Link Streaming Proxy untuk "${channel.name}" berhasil disalin!`);
+    setTimeout(() => {
+      setCopiedProxyId(null);
+      setSyncNotice(null);
+    }, 3500);
+  };
 
   const handleSyncDatabase = async () => {
     if (channels.length === 0) return;
@@ -82,38 +97,51 @@ export const ChannelList: React.FC<ChannelListProps> = ({
             </div>
           </div>
 
-          {!isClientMode && (
-            <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {onOpenStreamingProxy && (
               <button
-                onClick={handleSyncDatabase}
-                disabled={isSyncing}
-                className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 active:scale-95 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
-                title="Simpan Semua Saluran ke Database Cloud Firestore & Server"
+                onClick={onOpenStreamingProxy}
+                className="px-2.5 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 active:scale-95 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                title="Buka Streaming Proxy Hub, Uji Stream & Playlist M3U"
               >
-                <Database className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-                <span className="hidden xs:inline">{isSyncing ? 'Menyimpan...' : 'Simpan DB'}</span>
+                <Radio className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden xs:inline">Proxy & M3U</span>
               </button>
-              {onOpenAddModal && (
+            )}
+
+            {!isClientMode && (
+              <>
                 <button
-                  onClick={onOpenAddModal}
-                  className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md transition-all"
-                  title="Tambah Saluran atau Impor M3U"
+                  onClick={handleSyncDatabase}
+                  disabled={isSyncing}
+                  className="px-2.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 active:scale-95 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                  title="Simpan Semua Saluran ke Database Cloud Firestore & Server"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Tambah</span>
+                  <Database className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                  <span className="hidden xs:inline">{isSyncing ? 'Menyimpan...' : 'Simpan DB'}</span>
                 </button>
-              )}
-              {onOpenServerDashboard && (
-                <button
-                  onClick={onOpenServerDashboard}
-                  className="p-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs border border-slate-700 transition-colors"
-                  title="Tvheadend Server Status & Tuner"
-                >
-                  <Signal className="w-4 h-4 text-emerald-400" />
-                </button>
-              )}
-            </div>
-          )}
+                {onOpenAddModal && (
+                  <button
+                    onClick={onOpenAddModal}
+                    className="px-2.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-md transition-all"
+                    title="Tambah Saluran atau Impor M3U"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambah</span>
+                  </button>
+                )}
+                {onOpenServerDashboard && (
+                  <button
+                    onClick={onOpenServerDashboard}
+                    className="p-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 hover:text-white rounded-xl text-xs border border-slate-700 transition-colors"
+                    title="Tvheadend Server Status & Tuner"
+                  >
+                    <Signal className="w-4 h-4 text-emerald-400" />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Sync notification */}
@@ -248,6 +276,19 @@ export const ChannelList: React.FC<ChannelListProps> = ({
 
                 {/* Right: Actions */}
                 <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Copy Channel Proxy Link Button */}
+                  <button
+                    onClick={() => handleCopyProxyUrl(channel)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-700/60 transition-colors"
+                    title="Salin Link Streaming Proxy Saluran Ini"
+                  >
+                    {copiedProxyId === channel.id ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    ) : (
+                      <Radio className="w-3.5 h-3.5 text-indigo-400" />
+                    )}
+                  </button>
+
                   {!isClientMode && onEditChannel && (
                     <button
                       onClick={() => onEditChannel(channel)}

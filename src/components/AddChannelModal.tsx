@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, UploadCloud, FileText, Check, AlertCircle, Link, Database } from 'lucide-react';
+import { Plus, UploadCloud, FileText, Check, AlertCircle, Link, Database, Sparkles, Tv, CheckCheck } from 'lucide-react';
 import { Channel } from '../types/tvheadend';
-import { addCustomChannel, importM3uPlaylist } from '../services/api';
+import { addCustomChannel, importM3uPlaylist, importProviderChannels } from '../services/api';
 
 interface AddChannelModalProps {
   onClose: () => void;
@@ -9,9 +9,10 @@ interface AddChannelModalProps {
 }
 
 export const AddChannelModal: React.FC<AddChannelModalProps> = ({ onClose, onChannelAdded }) => {
-  const [activeTab, setActiveTab] = useState<'single' | 'm3u'>('single');
+  const [activeTab, setActiveTab] = useState<'single' | 'providers' | 'm3u'>('providers');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
   // Single channel form state
   const [name, setName] = useState('');
@@ -49,6 +50,24 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({ onClose, onCha
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'Gagal menambahkan saluran ke database');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImportProviders = async (provider: 'all' | 'vidio' | 'rctiplus') => {
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    setSuccessNotice(null);
+    try {
+      const res = await importProviderChannels(provider);
+      setSuccessNotice(res.message);
+      onChannelAdded();
+      setTimeout(() => {
+        onClose();
+      }, 1200);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Gagal mengambil saluran provider');
     } finally {
       setIsSubmitting(false);
     }
@@ -103,6 +122,18 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({ onClose, onCha
         {/* Tab Switcher */}
         <div className="flex border-b border-slate-800 bg-slate-950/40 text-xs">
           <button
+            onClick={() => setActiveTab('providers')}
+            className={`flex-1 py-3 text-center font-semibold border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
+              activeTab === 'providers'
+                ? 'border-blue-500 text-blue-400 bg-slate-900'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Vidio & RCTI+</span>
+            <span className="px-1 py-0.2 rounded text-[8px] bg-emerald-500/20 text-emerald-300 font-bold">1-KLIK</span>
+          </button>
+          <button
             onClick={() => setActiveTab('single')}
             className={`flex-1 py-3 text-center font-semibold border-b-2 transition-colors flex items-center justify-center gap-1.5 ${
               activeTab === 'single'
@@ -122,7 +153,7 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({ onClose, onCha
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
-            Impor Playlist M3U
+            Impor M3U
           </button>
         </div>
 
@@ -135,7 +166,66 @@ export const AddChannelModal: React.FC<AddChannelModalProps> = ({ onClose, onCha
             </div>
           )}
 
-          {activeTab === 'single' ? (
+          {successNotice && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCheck className="w-4 h-4 shrink-0" />
+              <span>{successNotice}</span>
+            </div>
+          )}
+
+          {activeTab === 'providers' ? (
+            <div className="space-y-4 text-xs">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-950/50 to-blue-950/40 border border-indigo-500/30 space-y-2">
+                <div className="flex items-center gap-2 font-bold text-white text-sm">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>Ambil Semua Saluran Vidio.com & RCTIplus</span>
+                </div>
+                <p className="text-slate-300 text-xs leading-relaxed">
+                  Tarik otomatis seluruh saluran TV nasional dari Vidio.com (SCTV, Indosiar, Moji, Mentari TV, Kompas, Metro, TV One, BTV, dll.) dan MNC RCTI+ (RCTI, MNCTV, GTV, iNews, Sindonews, IDX, dll.) dengan proxy anti-CORS otomatis.
+                </p>
+              </div>
+
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => handleImportProviders('all')}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 active:scale-95 transition-all"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>{isSubmitting ? 'Mengambil Saluran...' : 'Ambil Semua Saluran (Vidio + RCTI+)'}</span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleImportProviders('vidio')}
+                    className="py-2.5 px-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Tv className="w-3.5 h-3.5" />
+                    <span>Hanya Vidio.com (9 Saluran)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={() => handleImportProviders('rctiplus')}
+                    className="py-2.5 px-3 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/30 text-indigo-300 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <Tv className="w-3.5 h-3.5" />
+                    <span>Hanya RCTI+ (9 Saluran)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                <p className="font-semibold text-slate-300">Catatan Integrasi Streaming Proxy:</p>
+                <p>• Seluruh segmen stream HLS akan ditulis ulang secara otomatis melalui server proxy.</p>
+                <p>• Data saluran akan disimpan secara permanen di database Cloud Firestore & server.</p>
+              </div>
+            </div>
+          ) : activeTab === 'single' ? (
             <form onSubmit={handleSingleSubmit} className="space-y-4 text-xs">
               <div>
                 <label className="text-slate-300 font-medium block mb-1">Nama Saluran Siaran *</label>
