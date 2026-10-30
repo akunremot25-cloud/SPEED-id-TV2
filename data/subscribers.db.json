@@ -1,0 +1,40 @@
+[
+  {
+    "id": "sub-vip-demo",
+    "code": "SPEED-VIP-TEST",
+    "name": "Pelanggan VIP Demo",
+    "phone": "+6281234567890",
+    "status": "active",
+    "package": "all",
+    "createdAt": "2026-10-29T16:04:26.670Z",
+    "expiresAt": "permanent",
+    "deviceLimit": 3,
+    "notes": "Akun demonstrasi akses penuh seumur hidup",
+    "lastActiveAt": "2026-10-29T16:04:40.027Z",
+    "lastIp": "127.0.0.1"
+  },
+  {
+    "id": "sub-demo-01",
+    "code": "SPEED-8821-4912",
+    "name": "Budi Santoso (Living Room)",
+    "phone": "+6285712348899",
+    "status": "active",
+    "package": "all",
+    "createdAt": "2026-10-29T16:04:26.670Z",
+    "expiresAt": "2026-11-28T16:04:26.670Z",
+    "deviceLimit": 2,
+    "notes": "Paket Bulanan 30 Hari"
+  },
+  {
+    "id": "sub-demo-off",
+    "code": "SPEED-OFF-TRIAL",
+    "name": "Penonton Uji Coba (Contoh Dimatikan)",
+    "phone": "+6289988776655",
+    "status": "disabled",
+    "package": "nasional",
+    "createdAt": "2026-10-29T16:04:26.670Z",
+    "expiresAt": "2026-11-05T16:04:26.670Z",
+    "deviceLimit": 1,
+    "notes": "Status dinonaktifkan oleh administrator untuk pengujian kontrol"
+  }
+]

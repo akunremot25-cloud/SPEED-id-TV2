@@ -25,6 +25,16 @@ service cloud.firestore {
         data.streamUrl is string && data.streamUrl.size() <= 1000;
     }
 
+    function isValidSubscriber(data) {
+      return data.keys().hasAll(['id', 'code', 'name', 'status', 'createdAt', 'expiresAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.code is string && data.code.size() <= 64 &&
+        data.name is string && data.name.size() <= 100 &&
+        (data.status == 'active' || data.status == 'disabled' || data.status == 'expired') &&
+        data.createdAt is string &&
+        data.expiresAt is string;
+    }
+
     // Channels collection
     match /channels/{channelId} {
       // Anyone can read channels (live viewing for all clients)
@@ -38,6 +48,21 @@ service cloud.firestore {
 
       // Allow deleting channels
       allow delete: if isValidId(channelId);
+    }
+
+    // Subscribers & activation codes collection
+    match /subscribers/{subscriberId} {
+      // Allow read to verify codes and sync status
+      allow read: if true;
+
+      // Allow create with valid schema
+      allow create: if isValidId(subscriberId) && isValidSubscriber(incoming());
+
+      // Allow update with valid schema (status toggles, expiration updates)
+      allow update: if isValidId(subscriberId) && isValidSubscriber(incoming());
+
+      // Allow deleting subscriber
+      allow delete: if isValidId(subscriberId);
     }
   }
 }

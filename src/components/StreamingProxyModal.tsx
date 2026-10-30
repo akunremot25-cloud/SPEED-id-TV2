@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Hls from 'hls.js';
+import * as dashjs from 'dashjs';
 import { 
   Radio, X, Copy, Check, Play, Pause, ExternalLink, ShieldCheck, 
   Download, Activity, ArrowRight, RefreshCw, Zap, Server, 
@@ -180,17 +181,30 @@ export const CORE_NATIONAL_CHANNELS: CoreTvChannel[] = [
     badgeTheme: 'bg-blue-400/20 text-blue-200 border-blue-400/30',
   },
   {
-    id: 'antv-hd',
-    name: 'ANTV HD (1080p)',
-    provider: 'Vidio (782-antv) / Viva',
+    id: 'antv-hd-2',
+    name: 'ANTV HD 2',
+    provider: 'INDONESIA • Mikrofast DASH (782)',
     channelNumber: 12,
-    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png',
-    streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h212/01.m3u8',
-    description: 'Siaran langsung drama unggulan, sinetron keluarga, komedi & animasi favorit ANTV HD via Vidio (782-antv)',
-    quality: '1080p 50FPS • Live',
+    logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg',
+    streamUrl: 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd',
+    description: 'Siaran langsung ANTV HD 2 via MPEG-DASH manifest mikrofast Google TV Streamer.',
+    quality: '720p / 480p DASH • Live',
     borderTheme: 'border-amber-500/40 hover:border-amber-400',
     bgGradient: 'from-amber-950/40 to-slate-900/90',
     badgeTheme: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+  },
+  {
+    id: 'antv-hd-3',
+    name: 'ANTV HD 3',
+    provider: 'INDONESIA • Aspaltv HLS (782)',
+    channelNumber: 14,
+    logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg',
+    streamUrl: 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782',
+    description: 'Siaran langsung ANTV HD 3 via transmisi HLS VidioPlayer / Akamai.',
+    quality: '720p / 1080p HLS • Live',
+    borderTheme: 'border-orange-500/40 hover:border-orange-400',
+    bgGradient: 'from-orange-950/40 to-slate-900/90',
+    badgeTheme: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
   },
   {
     id: 'mnctv-hd',
@@ -239,6 +253,7 @@ export const StreamingProxyModal: React.FC<StreamingProxyModalProps> = ({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
   const hlsPreviewRef = useRef<Hls | null>(null);
+  const dashPreviewRef = useRef<dashjs.MediaPlayerClass | null>(null);
 
   // Search filter for channel proxy links
   const [channelSearch, setChannelSearch] = useState<string>('');
@@ -374,8 +389,32 @@ export const StreamingProxyModal: React.FC<StreamingProxyModalProps> = ({
       hlsPreviewRef.current.destroy();
       hlsPreviewRef.current = null;
     }
+    if (dashPreviewRef.current) {
+      dashPreviewRef.current.destroy();
+      dashPreviewRef.current = null;
+    }
 
     const video = videoPreviewRef.current;
+    const isMpd = urlToTest.includes('.mpd');
+
+    if (isMpd) {
+      try {
+        const dashPlayer = dashjs.MediaPlayer().create();
+        dashPreviewRef.current = dashPlayer;
+        dashPlayer.initialize(video, urlToTest, true);
+        dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => {
+          setPreviewLoading(false);
+          video.play().catch(() => {});
+        });
+        dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (e: any) => {
+          setPreviewLoading(false);
+          setPreviewError('Gagal memutar DASH stream.');
+        });
+        return;
+      } catch (e: any) {
+        console.warn('Dash preview init note:', e);
+      }
+    }
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -412,7 +451,7 @@ export const StreamingProxyModal: React.FC<StreamingProxyModalProps> = ({
       });
     } else {
       setPreviewLoading(false);
-      setPreviewError('Format HLS tidak didukung di browser ini');
+      setPreviewError('Format streaming tidak didukung di browser ini');
     }
   };
 
@@ -420,6 +459,10 @@ export const StreamingProxyModal: React.FC<StreamingProxyModalProps> = ({
     if (hlsPreviewRef.current) {
       hlsPreviewRef.current.destroy();
       hlsPreviewRef.current = null;
+    }
+    if (dashPreviewRef.current) {
+      dashPreviewRef.current.destroy();
+      dashPreviewRef.current = null;
     }
     if (videoPreviewRef.current) {
       videoPreviewRef.current.pause();
@@ -430,11 +473,14 @@ export const StreamingProxyModal: React.FC<StreamingProxyModalProps> = ({
     setPreviewError(null);
   };
 
-  // Clean up HLS preview on unmount
+  // Clean up preview on unmount
   useEffect(() => {
     return () => {
       if (hlsPreviewRef.current) {
         hlsPreviewRef.current.destroy();
+      }
+      if (dashPreviewRef.current) {
+        dashPreviewRef.current.destroy();
       }
     };
   }, []);
@@ -498,8 +544,8 @@ export const StreamingProxyModal: React.FC<StreamingProxyModalProps> = ({
     { name: 'CNN Indonesia', url: 'https://video.detik.com/livecnn/smil:cnntv/chunklist_w268557525_b384000_sleng.m3u8' },
     { name: 'CNBC Indonesia', url: 'https://video.detik.com/livecnbc/smil:cnbctv/chunklist_w1279679883_b384000_sleng.m3u8' },
     { name: 'SCTV (1080p)', url: 'http://202.150.172.59/SCTV/tracks-v1a1/mono.m3u8' },
-    { name: 'ANTV HD (1080p)', url: 'https://op-flashcon-digdayahd-1.dens.tv/h/h212/01.m3u8' },
-    { name: 'ANTV (Vidio 782-antv)', url: 'https://m.vidio.com/live/782-antv' },
+    { name: 'ANTV (Vision+ Live)', url: 'https://www.visionplus.id/webclient/live' },
+    { name: 'ANTV (720-ANTV Direct)', url: 'http://103.58.160.157:8278/720-ANTV/playlist.m3u8' },
     { name: 'MNCTV HD (1080p)', url: 'http://202.150.172.59/MNCTV/index.m3u8' },
   ];
 

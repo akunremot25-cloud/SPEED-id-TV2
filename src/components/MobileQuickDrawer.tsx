@@ -9,6 +9,8 @@ interface MobileQuickDrawerProps {
   onSelectChannel: (channel: Channel) => void;
   onEditChannel?: (channel: Channel) => void;
   onOpenStreamingProxy?: () => void;
+  onOpenSubscribers?: () => void;
+  onOpenActivation?: () => void;
   isClientMode?: boolean;
 }
 
@@ -20,6 +22,8 @@ export const MobileQuickDrawer: React.FC<MobileQuickDrawerProps> = ({
   onSelectChannel,
   onEditChannel,
   onOpenStreamingProxy,
+  onOpenSubscribers,
+  onOpenActivation,
   isClientMode = false,
 }) => {
   if (!isOpen) return null;
@@ -40,6 +44,28 @@ export const MobileQuickDrawer: React.FC<MobileQuickDrawerProps> = ({
             <span className="text-xs text-slate-400">({channels.length})</span>
           </div>
           <div className="flex items-center gap-2">
+            {isClientMode && onOpenActivation && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenActivation();
+                }}
+                className="px-2 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <span>Kode Aktivasi</span>
+              </button>
+            )}
+            {!isClientMode && onOpenSubscribers && (
+              <button
+                onClick={() => {
+                  onClose();
+                  onOpenSubscribers();
+                }}
+                className="px-2 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <span>Pelanggan</span>
+              </button>
+            )}
             {onOpenStreamingProxy && (
               <button
                 onClick={() => {

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
+import * as dashjs from 'dashjs';
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, 
   RotateCcw, ShieldCheck, Zap, Sun, Lock, Unlock, Moon,
@@ -36,6 +37,7 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const dashRef = useRef<dashjs.MediaPlayerClass | null>(null);
 
   // Playback state
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
@@ -100,6 +102,17 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
 
   const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
   const isForceLandscapeActive = isForceLandscape && isPortrait;
+
+  const isEmbedMode = Boolean(
+    channel.streamUrl.includes('/embed') ||
+    (channel.streamUrl.includes('vidio.com/live') && !channel.streamUrl.includes('.m3u8'))
+  );
+
+  const embedUrl = isEmbedMode
+    ? (channel.streamUrl.includes('/embed')
+        ? channel.streamUrl
+        : 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true')
+    : null;
 
   const showGesturePopup = useCallback((type: 'volume' | 'brightness' | 'seek', value: number | string) => {
     if (gestureTimeoutRef.current) clearTimeout(gestureTimeoutRef.current);
@@ -461,6 +474,20 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
 
   // Initialize or re-initialize player on channel / proxy / dataSaver change
   useEffect(() => {
+    if (isEmbedMode) {
+      setIsLoading(false);
+      setErrorMsg(null);
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      if (dashRef.current) {
+        dashRef.current.destroy();
+        dashRef.current = null;
+      }
+      return;
+    }
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -472,9 +499,66 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
+    if (dashRef.current) {
+      dashRef.current.destroy();
+      dashRef.current = null;
+    }
 
     const streamTargetUrl = useProxy ? getProxyStreamUrl(channel.streamUrl) : channel.streamUrl;
+    const isDASH = streamTargetUrl.includes('.mpd') || channel.streamUrl.includes('.mpd');
 
+    // MPEG-DASH playback engine via Dash.js
+    if (isDASH) {
+      try {
+        const dashPlayer = dashjs.MediaPlayer().create();
+        dashRef.current = dashPlayer;
+        dashPlayer.initialize(video, streamTargetUrl, true);
+        (dashPlayer as any).updateSettings({
+          streaming: {
+            lowLatencyEnabled: lowLatency && !dataSaver,
+            liveDelay: 3,
+          },
+        });
+
+        dashPlayer.on(dashjs.MediaPlayer.events.STREAM_INITIALIZED, () => {
+          setIsLoading(false);
+          setErrorMsg(null);
+          try {
+            const bitrates = (dashPlayer as any).getBitrateInfoListFor('video');
+            if (bitrates && bitrates.length > 0) {
+              const parsedLevels = bitrates.map((b: any, index: number) => ({
+                id: index,
+                name: `${b.height || 720}p (${Math.round(b.bitrate / 1000)}k)`,
+                bitrate: b.bitrate,
+              }));
+              setLevels(parsedLevels);
+            }
+          } catch {}
+          video.play().catch(() => setIsPlaying(false));
+        });
+
+        dashPlayer.on(dashjs.MediaPlayer.events.QUALITY_CHANGE_RENDERED, (e: any) => {
+          if (e.mediaType === 'video') {
+            setCurrentLevel(e.newQuality);
+          }
+        });
+
+        dashPlayer.on(dashjs.MediaPlayer.events.ERROR, (e: any) => {
+          console.warn('DASH playback notice:', e);
+        });
+
+        return () => {
+          if (dashRef.current) {
+            dashRef.current.destroy();
+            dashRef.current = null;
+          }
+        };
+      } catch (err) {
+        console.warn('Dash.js init error, falling back to direct video:', err);
+      }
+    }
+
+    // HLS playback engine via Hls.js
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -523,6 +607,19 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
+        // Detect if administrator turned off access for this subscriber code
+        const respCode = data.response?.code || (data.response as any)?.status;
+        if (respCode === 403) {
+          console.warn('Akses siaran 403 Forbidden - Dimatikan oleh admin');
+          setErrorMsg('Akses siaran Anda telah DINONAKTIFKAN oleh administrator. Silakan hubungi admin untuk mengaktifkan kembali.');
+          setIsLoading(false);
+          hls.destroy();
+          window.dispatchEvent(new CustomEvent('tvh:stream-access-denied', { 
+            detail: { code: 403, reason: 'Akses siaran Anda telah dinonaktifkan oleh administrator.' } 
+          }));
+          return;
+        }
+
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -563,6 +660,10 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
+      }
+      if (dashRef.current) {
+        dashRef.current.destroy();
+        dashRef.current = null;
       }
     };
   }, [channel.streamUrl, useProxy, lowLatency, dataSaver, channel.backupUrls]);
@@ -657,7 +758,20 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
   };
 
   const selectLevel = (levelIndex: number) => {
-    if (hlsRef.current) {
+    if (dashRef.current) {
+      const dp = dashRef.current as any;
+      if (levelIndex === -1) {
+        dp.updateSettings?.({
+          streaming: { abr: { autoSwitchBitrate: { video: true } } },
+        });
+      } else {
+        dp.updateSettings?.({
+          streaming: { abr: { autoSwitchBitrate: { video: false } } },
+        });
+        dp.setQualityFor?.('video', levelIndex);
+      }
+      setCurrentLevel(levelIndex);
+    } else if (hlsRef.current) {
       hlsRef.current.currentLevel = levelIndex;
       setCurrentLevel(levelIndex);
     }
@@ -724,18 +838,29 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        playsInline
-        webkit-playsinline="true"
-        x5-video-player-type="h5-page"
-        className={`transition-all duration-300 ${getAspectClass()}`}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onWaiting={() => setIsLoading(true)}
-        onPlaying={() => setIsLoading(false)}
-      />
+      {/* Video Element or Embed Iframe */}
+      {isEmbedMode && embedUrl ? (
+        <iframe
+          src={embedUrl}
+          title={channel.name}
+          className="w-full h-full border-0 absolute inset-0 z-10"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write"
+          allowFullScreen
+          onLoad={() => setIsLoading(false)}
+        />
+      ) : (
+        <video
+          ref={videoRef}
+          playsInline
+          webkit-playsinline="true"
+          x5-video-player-type="h5-page"
+          className={`transition-all duration-300 ${getAspectClass()}`}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onWaiting={() => setIsLoading(true)}
+          onPlaying={() => setIsLoading(false)}
+        />
+      )}
 
       {/* Dim overlay for brightness gesture */}
       <div 

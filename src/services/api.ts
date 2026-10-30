@@ -62,10 +62,20 @@ export async function fetchChannels(): Promise<Channel[]> {
             streamUrl.includes('103.58.160.157') ||
             streamUrl.includes('ntv1.akamaized');
 
+          const isOldAntv = docSnap.id === 'antv-hd' || docSnap.id === 'vidio-antv' || (name.toLowerCase().includes('antv') && !name.includes('ANTV HD 2') && !name.includes('ANTV HD 3'));
+
+          if (isOldAntv) {
+            name = 'ANTV HD 2';
+            streamUrl = 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd';
+            logo = 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg';
+          }
+
           const hasNewerServerStream = matchServer?.streamUrl && (
             matchServer.streamUrl.includes('202.150.172.59') ||
             matchServer.streamUrl.includes('dens.tv') ||
-            matchServer.streamUrl.includes('detik.com')
+            matchServer.streamUrl.includes('detik.com') ||
+            matchServer.streamUrl.includes('mikrofast.web.id') ||
+            matchServer.streamUrl.includes('aspaltvpasti.top')
           ) && streamUrl !== matchServer.streamUrl;
 
           if ((isStalePlaceholder || hasNewerServerStream) && matchServer?.streamUrl) {
@@ -320,9 +330,15 @@ export async function importM3uPlaylist(content: string): Promise<{ importedCoun
   return result;
 }
 
-export function getProxyStreamUrl(originalUrl: string): string {
-  if (originalUrl.startsWith('/api/proxy/stream')) return originalUrl;
-  return `${API_BASE}/proxy/stream?url=${encodeURIComponent(originalUrl)}`;
+export function getProxyStreamUrl(originalUrl: string, code?: string): string {
+  const activeCode = code || (typeof localStorage !== 'undefined' ? localStorage.getItem('tvh_subscriber_code') : null);
+  const codeSuffix = activeCode ? `&code=${encodeURIComponent(activeCode.trim().toUpperCase())}` : '';
+
+  if (originalUrl.startsWith('/api/proxy/stream')) {
+    if (originalUrl.includes('code=')) return originalUrl;
+    return `${originalUrl}${codeSuffix}`;
+  }
+  return `${API_BASE}/proxy/stream?url=${encodeURIComponent(originalUrl)}${codeSuffix}`;
 }
 
 export async function syncAllChannelsToDatabase(channels: Channel[]): Promise<{ count: number }> {

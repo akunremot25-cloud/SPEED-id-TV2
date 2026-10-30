@@ -190,19 +190,17 @@
   {
     "id": "antv-hd",
     "number": 12,
-    "name": "ANTV HD (Realtime Vidio)",
+    "name": "ANTV (720p HLS)",
     "category": "Nasional",
     "logo": "https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png",
-    "streamUrl": "https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true",
+    "streamUrl": "http://103.58.160.157:8278/720-ANTV/playlist.m3u8",
     "backupUrls": [
-      "https://m.vidio.com/live/782-antv",
-      "https://www.vidio.com/live/782-antv",
       "http://202.150.172.59/VTVHD/index.m3u8",
-      "http://103.58.160.157:8278/720-ANTV/playlist.m3u8"
+      "http://202.80.222.20/cdn/iptv/Tvod/001/channel2000022/1024.m3u8"
     ],
-    "quality": "1080p",
+    "quality": "720p",
     "fps": 50,
-    "bitrateKbps": 3200,
+    "bitrateKbps": 2800,
     "audioCodec": "AAC",
     "videoCodec": "H.264",
     "isFavorite": true

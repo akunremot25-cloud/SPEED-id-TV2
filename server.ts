@@ -215,17 +215,31 @@ const DEFAULT_CHANNELS: ServerChannel[] = [
     isFavorite: true,
   },
   {
-    id: 'antv-hd',
+    id: 'antv-hd-2',
     number: 12,
-    name: 'ANTV HD (Realtime Vidio)',
+    name: 'ANTV HD 2',
     category: 'Nasional',
-    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png',
-    streamUrl: 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true',
+    logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg',
+    streamUrl: 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd',
     backupUrls: [
-      'https://m.vidio.com/live/782-antv',
-      'https://www.vidio.com/live/782-antv',
-      'http://202.150.172.59/VTVHD/index.m3u8',
-      'http://103.58.160.157:8278/720-ANTV/playlist.m3u8',
+      'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782',
+    ],
+    quality: '720p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'antv-hd-3',
+    number: 14,
+    name: 'ANTV HD 3',
+    category: 'Nasional',
+    logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg',
+    streamUrl: 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782',
+    backupUrls: [
+      'https://vidio123.mikrofast.web.id/vidio/782/index.mpd',
     ],
     quality: '1080p',
     fps: 50,
@@ -259,10 +273,131 @@ import fs from 'fs';
 const DATA_DIR = path.resolve(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'channels.db.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.db.json');
+const SUBSCRIBERS_FILE = path.join(DATA_DIR, 'subscribers.db.json');
 
 // Ensure database directory exists
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Subscriber & Activation Code Model
+export interface ServerSubscriber {
+  id: string;
+  code: string;
+  name: string;
+  phone?: string;
+  status: 'active' | 'disabled' | 'expired';
+  package: 'all' | 'nasional' | 'premium';
+  createdAt: string;
+  expiresAt: string; // ISO string or "permanent"
+  deviceLimit: number;
+  notes?: string;
+  lastActiveAt?: string;
+  lastChannel?: string;
+  lastIp?: string;
+}
+
+const DEFAULT_SUBSCRIBERS: ServerSubscriber[] = [
+  {
+    id: 'sub-vip-demo',
+    code: 'SPEED-VIP-TEST',
+    name: 'Pelanggan VIP Demo',
+    phone: '+6281234567890',
+    status: 'active',
+    package: 'all',
+    createdAt: new Date().toISOString(),
+    expiresAt: 'permanent',
+    deviceLimit: 3,
+    notes: 'Akun demonstrasi akses penuh seumur hidup',
+  },
+  {
+    id: 'sub-demo-01',
+    code: 'SPEED-8821-4912',
+    name: 'Budi Santoso (Living Room)',
+    phone: '+6285712348899',
+    status: 'active',
+    package: 'all',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    deviceLimit: 2,
+    notes: 'Paket Bulanan 30 Hari',
+  },
+  {
+    id: 'sub-demo-off',
+    code: 'SPEED-OFF-TRIAL',
+    name: 'Penonton Uji Coba (Contoh Dimatikan)',
+    phone: '+6289988776655',
+    status: 'disabled',
+    package: 'nasional',
+    createdAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    deviceLimit: 1,
+    notes: 'Status dinonaktifkan oleh administrator untuk pengujian kontrol',
+  },
+];
+
+function loadSubscribersFromDb(): ServerSubscriber[] {
+  try {
+    if (fs.existsSync(SUBSCRIBERS_FILE)) {
+      const content = fs.readFileSync(SUBSCRIBERS_FILE, 'utf-8');
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('[Database] Gagal membaca data subscribers:', err);
+  }
+  saveSubscribersToDb(DEFAULT_SUBSCRIBERS);
+  return [...DEFAULT_SUBSCRIBERS];
+}
+
+function saveSubscribersToDb(data: ServerSubscriber[]) {
+  try {
+    const tempFile = `${SUBSCRIBERS_FILE}.tmp`;
+    fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tempFile, SUBSCRIBERS_FILE);
+  } catch (err) {
+    console.error('[Database] Gagal menyimpan data subscribers:', err);
+  }
+}
+
+let subscribers: ServerSubscriber[] = loadSubscribersFromDb();
+
+// Helper to check code status
+function checkSubscriberCode(rawCode?: string): { valid: boolean; status?: string; reason?: string; subscriber?: ServerSubscriber; remainingDays?: number } {
+  if (!rawCode) {
+    return { valid: false, reason: 'Kode aktivasi wajib disertakan' };
+  }
+  const cleanCode = rawCode.trim().toUpperCase();
+  const sub = subscribers.find((s) => s.code.toUpperCase() === cleanCode);
+  if (!sub) {
+    return { valid: false, reason: 'Kode aktivasi tidak terdaftar atau salah' };
+  }
+  if (sub.status === 'disabled') {
+    return {
+      valid: false,
+      status: 'disabled',
+      reason: 'Akses siaran Anda telah DINONAKTIFKAN oleh administrator.',
+      subscriber: sub,
+    };
+  }
+  if (sub.expiresAt && sub.expiresAt !== 'permanent') {
+    const expTime = new Date(sub.expiresAt).getTime();
+    const now = Date.now();
+    if (now > expTime) {
+      return {
+        valid: false,
+        status: 'expired',
+        reason: 'Kode aktivasi telah KEDALUWARSA. Hubungi admin untuk perpanjangan.',
+        subscriber: sub,
+        remainingDays: 0,
+      };
+    }
+    const remainingDays = Math.ceil((expTime - now) / (1000 * 60 * 60 * 24));
+    return { valid: true, status: 'active', subscriber: sub, remainingDays };
+  }
+  return { valid: true, status: 'active', subscriber: sub, remainingDays: 9999 };
 }
 
 function loadChannelsFromDb(): ServerChannel[] {
@@ -644,18 +779,149 @@ app.get('/api/tvheadend/tuners', (_req: Request, res: Response) => {
   res.json(tuners);
 });
 
+// ==========================================
+// Subscribers & Viewer Activation Control API
+// ==========================================
+
+// Get all subscribers
+app.get('/api/subscribers', (_req: Request, res: Response) => {
+  res.json(subscribers);
+});
+
+// Verify activation code for client player
+app.get('/api/subscribers/verify', (req: Request, res: Response) => {
+  const code = req.query.code as string;
+  if (!code) {
+    res.status(400).json({ valid: false, reason: 'Parameter code wajib disertakan' });
+    return;
+  }
+  const result = checkSubscriberCode(code);
+  res.json(result);
+});
+
+// Create new subscriber & code
+app.post('/api/subscribers', (req: Request, res: Response) => {
+  const body = req.body;
+  if (!body.code || !body.name) {
+    res.status(400).json({ error: 'Kode aktivasi dan Nama pelanggan wajib diisi' });
+    return;
+  }
+
+  const existingIdx = subscribers.findIndex((s) => s.code.toUpperCase() === body.code.trim().toUpperCase());
+  if (existingIdx >= 0) {
+    res.status(409).json({ error: 'Kode aktivasi ini sudah digunakan' });
+    return;
+  }
+
+  const newSub: ServerSubscriber = {
+    id: body.id || `sub-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    code: body.code.trim().toUpperCase(),
+    name: body.name.trim(),
+    phone: body.phone || '',
+    status: body.status || 'active',
+    package: body.package || 'all',
+    createdAt: body.createdAt || new Date().toISOString(),
+    expiresAt: body.expiresAt || 'permanent',
+    deviceLimit: Number(body.deviceLimit) || 1,
+    notes: body.notes || '',
+  };
+
+  subscribers.unshift(newSub);
+  saveSubscribersToDb(subscribers);
+  res.json({ success: true, subscriber: newSub });
+});
+
+// Update subscriber (status: active/disabled, expiration, etc.)
+app.put('/api/subscribers/:id', (req: Request, res: Response) => {
+  const id = req.params.id;
+  const index = subscribers.findIndex((s) => s.id === id || s.code.toUpperCase() === id.toUpperCase());
+  if (index === -1) {
+    res.status(404).json({ error: 'Pelanggan tidak ditemukan' });
+    return;
+  }
+
+  const body = req.body;
+  subscribers[index] = {
+    ...subscribers[index],
+    name: body.name !== undefined ? body.name : subscribers[index].name,
+    code: body.code !== undefined ? body.code.trim().toUpperCase() : subscribers[index].code,
+    phone: body.phone !== undefined ? body.phone : subscribers[index].phone,
+    status: body.status !== undefined ? body.status : subscribers[index].status,
+    package: body.package !== undefined ? body.package : subscribers[index].package,
+    expiresAt: body.expiresAt !== undefined ? body.expiresAt : subscribers[index].expiresAt,
+    deviceLimit: body.deviceLimit !== undefined ? Number(body.deviceLimit) : subscribers[index].deviceLimit,
+    notes: body.notes !== undefined ? body.notes : subscribers[index].notes,
+  };
+
+  saveSubscribersToDb(subscribers);
+  res.json({ success: true, subscriber: subscribers[index] });
+});
+
+// Delete subscriber
+app.delete('/api/subscribers/:id', (req: Request, res: Response) => {
+  const id = req.params.id;
+  const initialLen = subscribers.length;
+  subscribers = subscribers.filter((s) => s.id !== id && s.code.toUpperCase() !== id.toUpperCase());
+  if (subscribers.length === initialLen) {
+    res.status(404).json({ error: 'Pelanggan tidak ditemukan' });
+    return;
+  }
+  saveSubscribersToDb(subscribers);
+  res.json({ success: true, message: 'Pelanggan berhasil dihapus' });
+});
+
 // Dynamic M3U playlist export for mobile IPTV apps (VLC, TiviMate, OTT Navigator, etc.)
+// Accepts optional ?code=SPEED-XXXX-XXXX for subscriber authentication & control
 app.get('/api/tvheadend/playlist.m3u', (req: Request, res: Response) => {
   const host = req.get('host') || 'localhost:3000';
   const protocol = req.protocol;
   const baseUrl = `${protocol}://${host}`;
+  const codeParam = (req.query.code as string) || '';
+
+  // If subscriber code is supplied, check status and expiration
+  if (codeParam) {
+    const check = checkSubscriberCode(codeParam);
+    if (!check.valid) {
+      res.status(403);
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.send(`#EXTM3U\r\n#EXTINF:-1,AKSES DINONAKTIFKAN: ${check.reason || 'Hubungi Admin'}\r\nhttp://invalid`);
+      return;
+    }
+  }
+
+  const codeQuerySuffix = codeParam ? `&code=${encodeURIComponent(codeParam.trim().toUpperCase())}` : '';
 
   let m3u = '#EXTM3U name="Tvheadend Mobile Live Channels"\r\n';
 
   for (const ch of channels) {
-    const proxyStreamUrl = `${baseUrl}/api/proxy/stream?url=${encodeURIComponent(ch.streamUrl)}`;
-    m3u += `#EXTINF:-1 tvg-id="${ch.id}" tvg-name="${ch.name}" tvg-logo="${ch.logo}" group-title="${ch.category}",${ch.name}\r\n`;
-    m3u += `${proxyStreamUrl}\r\n`;
+    const isMpd = ch.streamUrl.includes('.mpd');
+    const isAntv2 = ch.id.includes('antv-2') || ch.id.includes('antv-hd-2') || ch.name.includes('ANTV HD 2') || ch.streamUrl.includes('mikrofast.web.id/vidio/782');
+    const isAntv3 = ch.id.includes('antv-3') || ch.id.includes('antv-hd-3') || ch.name.includes('ANTV HD 3') || ch.streamUrl.includes('aspaltvpasti.top');
+
+    const proxyStreamUrl = `${baseUrl}/api/proxy/stream?url=${encodeURIComponent(ch.streamUrl)}${codeQuerySuffix}`;
+
+    if (isAntv2) {
+      m3u += `#EXTINF:-1 tvg-id="" group-title="INDONESIA" tvg-logo="https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg",ANTV HD 2\r\n`;
+      m3u += `#KODIPROP:inputstream.adaptive.manifest_type=mpd\r\n`;
+      m3u += `#EXTVLCOPT:http-referrer=https://m.vidio.com/\r\n`;
+      m3u += `#EXTVLCOPT:http-origin=https://m.vidio.com\r\n`;
+      m3u += `#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Linux; Android 14; Google TV Streamer Build/UTT3.240625.001.K5; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.60 Mobile Safari/537.36\r\n`;
+      m3u += `${proxyStreamUrl}\r\n`;
+    } else if (isAntv3) {
+      m3u += `#EXTINF:-1 tvg-id="" tvg-name="ANTV 2" tvg-logo="https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg" group-title="INDONESIA",ANTV HD 3\r\n`;
+      m3u += `#EXTVLCOPT:http-referrer=https://m.vidio.com/\r\n`;
+      m3u += `#EXTVLCOPT:http-origin=https://m.vidio.com\r\n`;
+      m3u += `#EXTVLCOPT:http-user-agent=Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1\r\n`;
+      m3u += `#EXTVLCOPT:http-user-agent=VidioPlayer/6.41.11\r\n`;
+      m3u += `${proxyStreamUrl}\r\n`;
+    } else {
+      m3u += `#EXTINF:-1 tvg-id="${ch.id}" tvg-name="${ch.name}" tvg-logo="${ch.logo}" group-title="${ch.category}",${ch.name}\r\n`;
+      if (isMpd) {
+        m3u += `#KODIPROP:inputstream.adaptive.manifest_type=mpd\r\n`;
+        m3u += `#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n`;
+      }
+      m3u += `${proxyStreamUrl}\r\n`;
+    }
   }
 
   res.setHeader('Content-Type', 'application/x-mpegurl');
@@ -852,13 +1118,28 @@ const VIDIO_PROVIDER_CHANNELS: ServerChannel[] = [
     isFavorite: true,
   },
   {
-    id: 'vidio-antv',
+    id: 'vidio-antv-2',
     number: 110,
-    name: 'ANTV HD (Realtime Vidio)',
+    name: 'ANTV HD 2',
     category: 'Nasional',
-    logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png',
-    streamUrl: 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true',
-    backupUrls: ['https://m.vidio.com/live/782-antv', 'https://www.vidio.com/live/782-antv'],
+    logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg',
+    streamUrl: 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd',
+    backupUrls: ['https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782'],
+    quality: '720p',
+    fps: 50,
+    bitrateKbps: 3200,
+    audioCodec: 'AAC',
+    videoCodec: 'H.264',
+    isFavorite: true,
+  },
+  {
+    id: 'vidio-antv-3',
+    number: 111,
+    name: 'ANTV HD 3',
+    category: 'Nasional',
+    logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg',
+    streamUrl: 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782',
+    backupUrls: ['https://vidio123.mikrofast.web.id/vidio/782/index.mpd'],
     quality: '1080p',
     fps: 50,
     bitrateKbps: 3200,
@@ -1010,17 +1291,18 @@ const RCTIPLUS_PROVIDER_CHANNELS: ServerChannel[] = [
 function resolveVidioOrRctiUrl(inputUrl: string): { streamUrl: string; provider: 'vidio' | 'rctiplus'; channelName: string; logo: string } | null {
   const lower = inputUrl.toLowerCase().trim();
 
-  // If input is an explicit stream from an IP, detik.com, or already a full direct m3u8 URL, do NOT override it
-  if (lower.includes('202.150.172.59') || lower.includes('detik.com') || lower.includes('dens.tv')) {
+  // If input is an explicit stream from an IP, detik.com, mikrofast, aspaltvpasti, or already a direct m3u8/mpd stream, do NOT override it
+  if (lower.includes('202.150.172.59') || lower.includes('detik.com') || lower.includes('dens.tv') || lower.includes('mikrofast') || lower.includes('aspaltvpasti') || lower.includes('.mpd')) {
     return null;
   }
 
-  // Only resolve Vidio or RCTI web page URLs or explicit short names
+  // Only resolve Vidio, RCTI+, or Vision+ web page URLs or explicit short names
   const isVidioWeb = lower.includes('vidio.com');
   const isRctiWeb = lower.includes('rctiplus.com');
+  const isVisionPlusWeb = lower.includes('visionplus.id') || lower.includes('visionplus');
   const isShortName = !lower.includes('http://') && !lower.includes('https://');
 
-  if (!isVidioWeb && !isRctiWeb && !isShortName) {
+  if (!isVidioWeb && !isRctiWeb && !isVisionPlusWeb && !isShortName) {
     return null;
   }
   
@@ -1034,21 +1316,20 @@ function resolveVidioOrRctiUrl(inputUrl: string): { streamUrl: string; provider:
   if (lower.includes('moji') || lower.includes('/live/206') || lower.includes('206-moji')) {
     return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h206/01.m3u8', provider: 'vidio', channelName: 'Moji TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/moji.png' };
   }
-  if (lower.includes('mentari') || lower.includes('/live/8106') || lower.includes('8106-mentari')) {
-    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h208/01.m3u8', provider: 'vidio', channelName: 'Mentari TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/mentari.png' };
-  }
-  if (lower.includes('kompas') || lower.includes('/live/874') || lower.includes('874-kompas')) {
-    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h210/01.m3u8', provider: 'vidio', channelName: 'Kompas TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/kompastv.png' };
-  }
-  if (lower.includes('metro') || lower.includes('/live/777') || lower.includes('777-metro')) {
-    return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h205/01.m3u8', provider: 'vidio', channelName: 'Metro TV HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/metrotv.png' };
+  if (lower.includes('antv 3') || lower.includes('antv3') || lower.includes('antv-3') || lower.includes('antv-hls')) {
+    return { 
+      streamUrl: 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782', 
+      provider: 'vidio', 
+      channelName: 'ANTV HD 3', 
+      logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg' 
+    };
   }
   if (lower.includes('antv') || lower.includes('782-antv') || lower.includes('live782-antv') || lower.includes('antvklik') || lower.includes('/live/antv') || lower === 'antv') {
     return { 
-      streamUrl: 'https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true', 
+      streamUrl: 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd', 
       provider: 'vidio', 
-      channelName: 'ANTV HD (Realtime Vidio)', 
-      logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png' 
+      channelName: 'ANTV HD 2', 
+      logo: 'https://blog.visionplus.id/wp-content/uploads/2023/06/jadwal-program-antv-750x536.jpg' 
     };
   }
   if (lower.includes('tvone') || lower.includes('/live/783') || lower.includes('783-tvone') || lower.includes('782-tvone')) {
@@ -1088,6 +1369,16 @@ function resolveVidioOrRctiUrl(inputUrl: string): { streamUrl: string; provider:
   }
   if (lower.includes('visionprime') || lower.includes('vision-prime') || lower.includes('/tv/vision-prime')) {
     return { streamUrl: 'https://op-flashcon-digdayahd-1.dens.tv/h/h218/01.m3u8', provider: 'rctiplus', channelName: 'Vision Prime HD', logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/visionprime.png' };
+  }
+
+  // Vision+ ANTV checks
+  if (lower.includes('visionplus.id') || lower.includes('visionplus')) {
+    return {
+      streamUrl: 'http://103.58.160.157:8278/720-ANTV/playlist.m3u8',
+      provider: 'rctiplus',
+      channelName: 'ANTV HD (Vision+ Live)',
+      logo: 'https://raw.githubusercontent.com/AqFad2811/tv-logo/main/antv.png',
+    };
   }
 
   return null;
@@ -1180,8 +1471,24 @@ app.get('/api/proxy/resolve', (req: Request, res: Response) => {
   }
 });
 
-// High-Performance Streaming Proxy & Rewriter for Mobile HLS
-// Rewrites nested playlist & chunk URLs so relative paths don't fail CORS or 404 on mobile browsers
+// Dedicated direct ANTV HLS proxy endpoint (ANTV HD 3 via aspaltvpasti / Akamai)
+app.get(['/api/proxy/antv/live.m3u8', '/api/proxy/antv.m3u8', '/api/proxy/antv', '/api/proxy/antv3.m3u8', '/api/proxy/visionplus/antv.m3u8'], (req: Request, res: Response) => {
+  const host = req.get('host') || 'localhost:3000';
+  const protocol = req.protocol;
+  const directAntvUrl = 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782';
+  res.redirect(`${protocol}://${host}/api/proxy/stream?url=${encodeURIComponent(directAntvUrl)}`);
+});
+
+// Dedicated direct ANTV DASH (.mpd) proxy endpoint (ANTV HD 2 via Mikrofast relay 782)
+app.get(['/api/proxy/antv/index.mpd', '/api/proxy/antv/live.mpd', '/api/proxy/antv/mikrofast.mpd', '/api/proxy/antv2.mpd', '/api/proxy/antv.mpd'], (req: Request, res: Response) => {
+  const host = req.get('host') || 'localhost:3000';
+  const protocol = req.protocol;
+  const mikrofastUrl = 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd';
+  res.redirect(`${protocol}://${host}/api/proxy/stream?url=${encodeURIComponent(mikrofastUrl)}`);
+});
+
+// High-Performance Streaming Proxy & Rewriter for Mobile HLS & MPEG-DASH
+// Rewrites nested playlist, MPD manifests, & chunk URLs so relative paths don't fail CORS or 404 on mobile browsers
 app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> => {
   let rawUrl = req.query.url;
   if (!rawUrl || typeof rawUrl !== 'string') {
@@ -1189,21 +1496,57 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
     return;
   }
 
-  // Auto-resolve if user supplied a Vidio, RCTI+, or token-locked ANTV URL
-  if (rawUrl.includes('782-antv') || rawUrl.includes('live782-antv') || (rawUrl.includes('vidio.com') && rawUrl.includes('antv'))) {
+  // Subscriber Access Control Check:
+  // If ?code=SPEED-XXXX-XXXX is provided, verify whether access is active or has been turned off by admin
+  const clientCode = (req.query.code as string) || '';
+  if (clientCode) {
+    const check = checkSubscriberCode(clientCode);
+    if (!check.valid) {
+      res.status(403).json({
+        error: check.reason || 'Akses siaran Anda telah dinonaktifkan oleh administrator.',
+        status: check.status || 'disabled',
+        code: clientCode,
+      });
+      return;
+    }
+    // Record viewer activity
+    if (check.subscriber) {
+      check.subscriber.lastActiveAt = new Date().toISOString();
+      const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || '';
+      if (clientIp) check.subscriber.lastIp = clientIp;
+    }
+  }
+
+  // Support shorthand for direct ANTV source and Vision+ webclient live link
+  if (
+    rawUrl === 'antv' || 
+    rawUrl === 'antv2' || 
+    rawUrl === 'antv-mpd' || 
+    rawUrl === 'antv-dash' || 
+    rawUrl === 'antv-mikrofast'
+  ) {
+    rawUrl = 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd';
+  } else if (
+    rawUrl === 'antv3' || 
+    rawUrl === 'antv-hls' || 
+    rawUrl === 'antv-live' || 
+    rawUrl === 'antvklik' ||
+    rawUrl.includes('visionplus.id/webclient/live') ||
+    rawUrl.includes('visionplus.id/webclient/#/live') ||
+    (rawUrl.includes('visionplus') && rawUrl.includes('antv'))
+  ) {
+    rawUrl = 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782';
+  }
+
+  // Auto-resolve if user supplied a web Vidio live page (unless it is a direct .m3u8 or .mpd stream)
+  if ((rawUrl.includes('782-antv') || rawUrl.includes('live782-antv') || (rawUrl.includes('vidio.com') && rawUrl.includes('antv'))) && !rawUrl.includes('.m3u8') && !rawUrl.includes('.mpd')) {
     res.redirect('https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true');
     return;
   } else if (rawUrl.includes('/embed') && rawUrl.includes('vidio.com')) {
     res.redirect(rawUrl);
     return;
-  } else if (rawUrl.includes('103.58.160.157') && (rawUrl.includes('720-ANTV') || rawUrl.includes('ANTV'))) {
-    const isVlcOrIptv = (req.headers['user-agent'] || '').toLowerCase().includes('vlc') || (req.headers['user-agent'] || '').toLowerCase().includes('tivimate');
-    if (isVlcOrIptv) {
-      rawUrl = 'http://202.150.172.59/VTVHD/index.m3u8';
-    } else {
-      res.redirect('https://www.vidio.com/live/782-antv/embed?autoplay=true&player_only=true');
-      return;
-    }
+  } else if (rawUrl.includes('103.58.160.157') || rawUrl.includes('mikrofast.web.id') || rawUrl.includes('aspaltvpasti.top')) {
+    // Keep direct stream URLs as target so proxy fetches them with exact required spoofed headers
   } else {
     const resolved = resolveVidioOrRctiUrl(rawUrl);
     if (resolved) {
@@ -1236,7 +1579,19 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
     const hostname = targetUrl.hostname.toLowerCase();
     const href = targetUrl.href.toLowerCase();
 
-    if (hostname.includes('103.58.160.157') || href.includes('103.58.160.157')) {
+    if (hostname.includes('aspaltvpasti') || href.includes('aspaltvpasti') || hostname.includes('akamaized.net') || href.includes('akamaized.net')) {
+      headersToForward['User-Agent'] = 'VidioPlayer/6.41.11';
+      headersToForward['Referer'] = 'https://m.vidio.com/';
+      headersToForward['Origin'] = 'https://m.vidio.com';
+      headersToForward['X-Forwarded-For'] = '180.252.1.1';
+      headersToForward['X-Real-IP'] = '180.252.1.1';
+    } else if (hostname.includes('mikrofast') || href.includes('mikrofast')) {
+      headersToForward['User-Agent'] = 'Mozilla/5.0 (Linux; Android 14; Google TV Streamer Build/UTT3.240625.001.K5; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/130.0.6723.60 Mobile Safari/537.36';
+      headersToForward['Referer'] = 'https://m.vidio.com/';
+      headersToForward['Origin'] = 'https://m.vidio.com';
+      headersToForward['X-Forwarded-For'] = '180.252.1.1';
+      headersToForward['X-Real-IP'] = '180.252.1.1';
+    } else if (hostname.includes('103.58.160.157') || href.includes('103.58.160.157')) {
       headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36';
       headersToForward['X-Forwarded-For'] = '180.252.1.1';
       headersToForward['X-Real-IP'] = '180.252.1.1';
@@ -1250,9 +1605,9 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
       headersToForward['Origin'] = 'https://video.detik.com';
       headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/156.0.0.0 Safari/537.36';
     } else if (hostname.includes('vidio') || href.includes('vidio')) {
-      headersToForward['Referer'] = 'https://www.vidio.com/';
-      headersToForward['Origin'] = 'https://www.vidio.com';
-      headersToForward['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+      headersToForward['Referer'] = 'https://m.vidio.com/';
+      headersToForward['Origin'] = 'https://m.vidio.com';
+      headersToForward['User-Agent'] = 'VidioPlayer/6.41.11';
     } else if (hostname.includes('rcti') || href.includes('rcti') || hostname.includes('visionplus')) {
       headersToForward['Referer'] = 'https://www.rctiplus.com/';
       headersToForward['Origin'] = 'https://www.rctiplus.com';
@@ -1283,16 +1638,19 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
       const fallbackParam = req.query.fallback as string;
       let alternativeUrl = fallbackParam;
 
-      if (!alternativeUrl && (rawUrl.includes('103.58.160.157') || rawUrl.includes('720-ANTV') || rawUrl.toLowerCase().includes('antv'))) {
-        alternativeUrl = 'http://202.150.172.59/VTVHD/index.m3u8';
+      if (!alternativeUrl && (rawUrl.includes('782') || rawUrl.toLowerCase().includes('antv'))) {
+        alternativeUrl = rawUrl.includes('.mpd')
+          ? 'https://aspaltvpasti.top/Drmvidbos/Akun121/bosstv.m3u8?id=782'
+          : 'https://vidio123.mikrofast.web.id/vidio/782/index.mpd';
       }
 
       if (alternativeUrl && alternativeUrl !== targetUrl.href) {
         try {
           const altTarget = new URL(alternativeUrl);
           const altHeaders: Record<string, string> = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Referer': altTarget.hostname.includes('dens.tv') ? 'https://www.dens.tv/' : '',
+            'User-Agent': 'VidioPlayer/6.41.11',
+            'Referer': 'https://m.vidio.com/',
+            'Origin': 'https://m.vidio.com',
           };
           const altController = new AbortController();
           const altTimeout = setTimeout(() => altController.abort(), 8000);
@@ -1319,12 +1677,21 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
       contentType.includes('application/x-mpegURL') ||
       contentType.includes('application/vnd.apple.mpegurl');
 
+    const isMPD =
+      targetUrl.pathname.endsWith('.mpd') ||
+      contentType.includes('dash+xml') ||
+      contentType.includes('application/dash+xml') ||
+      contentType.includes('video/vnd.mpeg.dash.mpd');
+
+    // Final target URL after any HTTP 301/302 redirects (crucial for aspaltvpasti -> akamaized master.m3u8)
+    const finalTargetUrl = new URL(upstreamResponse.url || targetUrl.href);
+
     // Set CORS and streaming headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', '*');
     res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
-    res.setHeader('Cache-Control', isM3U8 ? 'no-cache, no-store, must-revalidate' : 'public, max-age=3600');
+    res.setHeader('Cache-Control', (isM3U8 || isMPD) ? 'no-cache, no-store, must-revalidate' : 'public, max-age=3600');
 
     if (upstreamResponse.status === 206) {
       res.status(206);
@@ -1334,22 +1701,42 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
       res.status(upstreamResponse.status);
     }
 
+    // MPEG-DASH Manifest (.mpd) Handling & BaseURL Rewriting
+    if (isMPD) {
+      let mpdText = await upstreamResponse.text();
+      res.setHeader('Content-Type', 'application/dash+xml; charset=utf-8');
+
+      // Mikrofast wraps Akamaized source URL in BaseURL which returns 403 when queried directly by clients.
+      // Mikrofast itself serves these media segments directly at https://vidio123.mikrofast.web.id/vidio/782/
+      // Rewriting the BaseURL directly to mikrofast or proxy ensures all chunks resolve with 200 OK.
+      if (mpdText.includes('akamaized.net') || hostname.includes('mikrofast')) {
+        mpdText = mpdText.replace(
+          /<BaseURL>[^<]+<\/BaseURL>/g,
+          '<BaseURL>https://vidio123.mikrofast.web.id/vidio/782/</BaseURL>'
+        );
+      }
+
+      res.send(mpdText);
+      return;
+    }
+
     // If it's an HLS Manifest (.m3u8), we rewrite relative URIs to flow through our proxy
     if (isM3U8) {
       const text = await upstreamResponse.text();
       res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+      const codeSuffix = clientCode ? `&code=${encodeURIComponent(clientCode)}` : '';
 
       const lines = text.split('\n');
       const rewrittenLines = lines.map((line) => {
         const trimmed = line.trim();
         if (!trimmed) return line;
 
-        // Rewrite encryption keys e.g. URI="key.php"
-        if (trimmed.startsWith('#EXT-X-KEY:')) {
+        // Rewrite tag URIs such as #EXT-X-KEY:, #EXT-X-MEDIA:, or #EXT-X-MAP:URI="..."
+        if (trimmed.startsWith('#EXT-X-KEY:') || trimmed.startsWith('#EXT-X-MEDIA:') || trimmed.startsWith('#EXT-X-MAP:')) {
           return line.replace(/URI="([^"]+)"/, (_match, uri) => {
             try {
-              const resolvedKeyUrl = new URL(uri, targetUrl.href).href;
-              return `URI="/api/proxy/stream?url=${encodeURIComponent(resolvedKeyUrl)}"`;
+              const resolvedKeyUrl = new URL(uri, finalTargetUrl.href).href;
+              return `URI="/api/proxy/stream?url=${encodeURIComponent(resolvedKeyUrl)}${codeSuffix}"`;
             } catch {
               return _match;
             }
@@ -1363,8 +1750,8 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
 
         // Rewrite media chunk or sub-playlist URL
         try {
-          const resolvedUrl = new URL(trimmed, targetUrl.href).href;
-          return `/api/proxy/stream?url=${encodeURIComponent(resolvedUrl)}`;
+          const resolvedUrl = new URL(trimmed, finalTargetUrl.href).href;
+          return `/api/proxy/stream?url=${encodeURIComponent(resolvedUrl)}${codeSuffix}`;
         } catch {
           return line;
         }

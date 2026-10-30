@@ -66,6 +66,69 @@
         }
       },
       "required": ["id", "number", "name", "category", "streamUrl"]
+    },
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "Viewer activation code and subscriber access control record",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique subscriber ID"
+        },
+        "code": {
+          "type": "string",
+          "description": "Unique activation code (e.g. SPEED-8821-4912)",
+          "maxLength": 64
+        },
+        "name": {
+          "type": "string",
+          "description": "Subscriber or customer full name",
+          "maxLength": 100
+        },
+        "phone": {
+          "type": "string",
+          "description": "Customer phone or WhatsApp number",
+          "maxLength": 30
+        },
+        "status": {
+          "type": "string",
+          "description": "Subscription status (active, disabled, or expired)",
+          "enum": ["active", "disabled", "expired"]
+        },
+        "package": {
+          "type": "string",
+          "description": "Subscription package name",
+          "maxLength": 50
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "expiresAt": {
+          "type": "string",
+          "description": "ISO timestamp of expiration or permanent"
+        },
+        "deviceLimit": {
+          "type": "number",
+          "description": "Maximum concurrent devices permitted"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Admin notes",
+          "maxLength": 500
+        },
+        "lastActiveAt": {
+          "type": "string",
+          "description": "ISO timestamp of last stream activity"
+        },
+        "lastIp": {
+          "type": "string",
+          "description": "Last client IP address",
+          "maxLength": 50
+        }
+      },
+      "required": ["id", "code", "name", "status", "createdAt", "expiresAt"]
     }
   },
   "firestore": {
@@ -74,6 +137,12 @@
         "$ref": "Channel"
       },
       "description": "Collection of TV broadcast channels with persistent configurations"
+    },
+    "/subscribers/{subscriberId}": {
+      "schema": {
+        "$ref": "Subscriber"
+      },
+      "description": "Collection of subscriber activation codes and control status"
     }
   }
 }

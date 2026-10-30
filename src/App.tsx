@@ -3,10 +3,13 @@ import {
   Tv, Server, Radio, Plus, Settings, Activity, ShieldCheck, 
   ExternalLink, Smartphone, Download, Info, Clock, PlayCircle,
   Volume2, Sun, Sparkles, RefreshCw, Pencil, Share2, Check,
-  Maximize2, Eye, ShieldAlert, MonitorPlay, ChevronDown, RotateCw
+  Maximize2, Eye, ShieldAlert, MonitorPlay, ChevronDown, RotateCw,
+  KeyRound, Users, Lock, Unlock, AlertTriangle
 } from 'lucide-react';
 import { Channel } from './types/tvheadend';
+import { Subscriber } from './types/subscriber';
 import { fetchChannels, deleteChannel } from './services/api';
+import { verifyActivationCode } from './services/subscriberApi';
 import { LivePlayer } from './components/LivePlayer';
 import { ChannelList } from './components/ChannelList';
 import { TvheadendServerDashboard } from './components/TvheadendServerDashboard';
@@ -17,6 +20,8 @@ import { StreamingProxyModal } from './components/StreamingProxyModal';
 import { MobileQuickDrawer } from './components/MobileQuickDrawer';
 import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { SubscriberManagerModal } from './components/SubscriberManagerModal';
+import { ActivationCodeModal } from './components/ActivationCodeModal';
 
 export default function App() {
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -64,6 +69,71 @@ export default function App() {
   const [isDiagnosticsModalOpen, setIsDiagnosticsModalOpen] = useState<boolean>(false);
   const [isStreamingProxyOpen, setIsStreamingProxyOpen] = useState<boolean>(false);
   const [isQuickDrawerOpen, setIsQuickDrawerOpen] = useState<boolean>(false);
+
+  // Subscriber & Activation Code State
+  const [isSubscriberManagerOpen, setIsSubscriberManagerOpen] = useState<boolean>(false);
+  const [isActivationModalOpen, setIsActivationModalOpen] = useState<boolean>(false);
+  const [currentSubscriber, setCurrentSubscriber] = useState<Subscriber | null>(null);
+  const [accessDeniedReason, setAccessDeniedReason] = useState<string | null>(null);
+
+  // Check Activation Code from URL query (?code=...) or localStorage on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryCode = params.get('code');
+    const storedCode = queryCode || localStorage.getItem('tvh_subscriber_code');
+
+    if (storedCode) {
+      verifyActivationCode(storedCode).then((res) => {
+        if (res.valid && res.subscriber) {
+          setCurrentSubscriber(res.subscriber);
+          localStorage.setItem('tvh_subscriber_code', res.subscriber.code);
+          setAccessDeniedReason(null);
+        } else {
+          setAccessDeniedReason(res.reason || 'Kode aktivasi tidak valid atau telah dinonaktifkan.');
+          setCurrentSubscriber(res.subscriber || null);
+          if (isClientMode) {
+            setIsActivationModalOpen(true);
+          }
+        }
+      });
+    }
+
+    // Event listener for stream access cutoff (403 from proxy when admin turns off code)
+    const handleStreamDenied = (e: any) => {
+      const reason = e.detail?.reason || 'Akses siaran Anda telah dinonaktifkan oleh administrator.';
+      setAccessDeniedReason(reason);
+      setIsActivationModalOpen(true);
+      setToastMessage('PERINGATAN: Akses siaran Anda telah dinonaktifkan oleh administrator.');
+    };
+    window.addEventListener('tvh:stream-access-denied', handleStreamDenied);
+
+    return () => {
+      window.removeEventListener('tvh:stream-access-denied', handleStreamDenied);
+    };
+  }, [isClientMode]);
+
+  // Periodic active subscriber status check (every 12 seconds in client mode)
+  useEffect(() => {
+    if (!currentSubscriber?.code) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await verifyActivationCode(currentSubscriber.code);
+        if (!res.valid) {
+          setAccessDeniedReason(res.reason || 'Akses siaran dinonaktifkan oleh administrator.');
+          setIsActivationModalOpen(true);
+          if (res.subscriber) setCurrentSubscriber(res.subscriber);
+        } else if (res.subscriber) {
+          setCurrentSubscriber(res.subscriber);
+          setAccessDeniedReason(null);
+        }
+      } catch (e) {
+        console.warn('Status check note:', e);
+      }
+    }, 12000);
+
+    return () => clearInterval(interval);
+  }, [currentSubscriber?.code]);
 
   // Load channels on mount
   useEffect(() => {
@@ -212,6 +282,24 @@ export default function App() {
           {/* Client Watching Mode specific actions */}
           {isClientMode ? (
             <>
+              {/* Activation Code Status / Input for Viewers */}
+              <button
+                onClick={() => setIsActivationModalOpen(true)}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                  currentSubscriber && currentSubscriber.status === 'active'
+                    ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/50'
+                    : 'bg-rose-950/50 border-rose-500/60 text-rose-200 hover:bg-rose-900/60 animate-pulse'
+                }`}
+                title="Status Kode Aktivasi Penonton (Klik untuk ubah atau perpanjang)"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span className="hidden xs:inline truncate max-w-[140px]">
+                  {currentSubscriber && currentSubscriber.status === 'active'
+                    ? currentSubscriber.name
+                    : 'Kode Aktivasi'}
+                </span>
+              </button>
+
               {/* Install PWA App Button */}
               <PWAInstallButton variant="header" />
 
@@ -252,6 +340,20 @@ export default function App() {
           ) : (
             /* Admin Mode specific actions */
             <>
+              {/* Subscriber & Activation Code Management Modal Button */}
+              <button
+                onClick={() => setIsSubscriberManagerOpen(true)}
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-900/80 to-red-900/80 hover:from-rose-800 hover:to-red-800 text-rose-100 hover:text-white border border-rose-500/50 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-950/40 active:scale-95 transition-all"
+                title="Kelola Pelanggan, Kode Aktivasi & Matikan Akses Penonton"
+              >
+                <KeyRound className="w-3.5 h-3.5 text-rose-400" />
+                <span className="hidden sm:inline">Kelola Pelanggan</span>
+                <span className="inline-flex sm:hidden">Pelanggan</span>
+                <span className="hidden md:inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-rose-500/30 text-rose-200 border border-rose-500/40">
+                  Kode & Kontrol
+                </span>
+              </button>
+
               {/* Switch back to Client Watch Mode */}
               <button
                 onClick={() => toggleClientMode(true)}
@@ -553,6 +655,37 @@ export default function App() {
         />
       )}
 
+      {/* Subscriber Management Modal (Admin) */}
+      <SubscriberManagerModal
+        isOpen={isSubscriberManagerOpen}
+        onClose={() => setIsSubscriberManagerOpen(false)}
+      />
+
+      {/* Activation Code Modal (Viewer / Client) */}
+      <ActivationCodeModal
+        isOpen={isActivationModalOpen}
+        onClose={() => setIsActivationModalOpen(false)}
+        currentSubscriber={currentSubscriber}
+        accessDeniedReason={accessDeniedReason}
+        onActivated={(sub) => {
+          setCurrentSubscriber(sub);
+          localStorage.setItem('tvh_subscriber_code', sub.code);
+          setAccessDeniedReason(null);
+          setIsActivationModalOpen(false);
+          setToastMessage(`Kode aktivasi aktif! Selamat menonton, ${sub.name}.`);
+          setTimeout(() => setToastMessage(null), 3500);
+          if (selectedChannel) {
+            handleSelectChannel({ ...selectedChannel });
+          }
+        }}
+        onDeactivate={() => {
+          setCurrentSubscriber(null);
+          localStorage.removeItem('tvh_subscriber_code');
+          setToastMessage('Kode aktivasi telah dihapus dari perangkat ini.');
+          setTimeout(() => setToastMessage(null), 3500);
+        }}
+      />
+
       {/* Mobile Quick Drawer for switching channels */}
       <MobileQuickDrawer
         channels={channels}
@@ -562,6 +695,8 @@ export default function App() {
         onSelectChannel={handleSelectChannel}
         onEditChannel={isClientMode ? undefined : (ch) => setEditingChannel(ch)}
         onOpenStreamingProxy={() => setIsStreamingProxyOpen(true)}
+        onOpenSubscribers={() => setIsSubscriberManagerOpen(true)}
+        onOpenActivation={() => setIsActivationModalOpen(true)}
         isClientMode={isClientMode}
       />
 
