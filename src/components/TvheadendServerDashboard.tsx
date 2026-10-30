@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Server, Cpu, Activity, Signal, Radio, Check, Copy, Download, 
-  Settings, Wifi, Shield, RefreshCw, Smartphone, Monitor, Database, Trash2
+  Settings, Wifi, Shield, RefreshCw, Smartphone, Monitor, Database, Trash2,
+  Lock, KeyRound
 } from 'lucide-react';
 import { TunerStatus, TvheadendServerConfig } from '../types/tvheadend';
 import { 
@@ -12,9 +13,14 @@ import {
 interface TvheadendServerDashboardProps {
   onClose: () => void;
   onOpenStreamingProxy?: () => void;
+  onOpenChangePin?: () => void;
 }
 
-export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> = ({ onClose, onOpenStreamingProxy }) => {
+export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> = ({ 
+  onClose, 
+  onOpenStreamingProxy,
+  onOpenChangePin,
+}) => {
   const [tuners, setTuners] = useState<TunerStatus[]>([]);
   const [config, setConfig] = useState<TvheadendServerConfig>({
     mode: 'standalone',
@@ -244,6 +250,36 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Admin Security PIN & Panel Lock Status */}
+          <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-500/30 flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2.5">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <Lock className="w-4 h-4" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  Kunci Keamanan Panel Administrator
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-300 font-semibold border border-amber-500/20">
+                    Aktif Terproteksi
+                  </span>
+                </h4>
+                <p className="text-xs text-slate-400">
+                  Panel pengelola terkunci dengan PIN sandi. PIN bawaan pertama: <strong className="text-amber-300 font-mono">123456</strong>
+                </p>
+              </div>
+            </div>
+            {onOpenChangePin && (
+              <button
+                type="button"
+                onClick={onOpenChangePin}
+                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow active:scale-95 transition-all"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                <span>Ubah PIN Admin</span>
+              </button>
+            )}
           </div>
 
           {/* M3U Playlist Export for External Mobile Apps (VLC / TiviMate) */}

@@ -499,6 +499,7 @@ const DEFAULT_CONFIG = {
   port: 9981,
   username: 'admin',
   password: '',
+  adminPin: '123456', // Default master PIN to lock admin panel
   streamProfile: 'webtv-h264-aac-matroska',
   useProxy: true,
   transcodingEnabled: true,
@@ -507,6 +508,10 @@ const DEFAULT_CONFIG = {
 };
 
 let serverConfig = loadConfigFromDb() || { ...DEFAULT_CONFIG };
+if (!serverConfig.adminPin) {
+  serverConfig.adminPin = '123456';
+  saveConfigToDb(serverConfig);
+}
 
 // Tuner mock & status
 const tuners = [
@@ -614,13 +619,67 @@ app.get('/api/health', (_req: Request, res: Response) => {
   });
 });
 
+// Admin Security & Panel Lock APIs
+app.post('/api/admin/verify', (req: Request, res: Response) => {
+  const { pin } = req.body;
+  if (!pin || typeof pin !== 'string') {
+    res.status(400).json({ success: false, message: 'PIN admin wajib diisi.' });
+    return;
+  }
+
+  const activePin = (serverConfig.adminPin || '123456').trim();
+  const inputPin = pin.trim();
+
+  if (inputPin === activePin) {
+    res.json({ success: true, message: 'PIN Admin valid. Akses panel terbuka.' });
+  } else {
+    res.status(401).json({ success: false, message: 'PIN Admin salah! Akses ditolak.' });
+  }
+});
+
+app.post('/api/admin/change-pin', (req: Request, res: Response) => {
+  const { currentPin, newPin } = req.body;
+  const activePin = (serverConfig.adminPin || '123456').trim();
+
+  if (!newPin || typeof newPin !== 'string' || newPin.trim().length < 4) {
+    res.status(400).json({ success: false, message: 'PIN baru minimal harus 4 karakter/angka.' });
+    return;
+  }
+
+  // If PIN is already custom, verify currentPin
+  if (activePin !== '123456' && currentPin?.trim() !== activePin) {
+    res.status(401).json({ success: false, message: 'PIN lama yang Anda masukkan salah.' });
+    return;
+  }
+
+  serverConfig.adminPin = newPin.trim();
+  saveConfigToDb(serverConfig);
+  res.json({ success: true, message: 'PIN Admin berhasil diubah dan disimpan!' });
+});
+
+app.get('/api/admin/status', (_req: Request, res: Response) => {
+  res.json({
+    isProtected: true,
+    hasCustomPin: (serverConfig.adminPin || '123456').trim() !== '123456',
+  });
+});
+
 app.get('/api/tvheadend/config', (_req: Request, res: Response) => {
-  res.json(serverConfig);
+  // Sanitize adminPin from public config
+  const { adminPin, ...safeConfig } = serverConfig;
+  res.json({ ...safeConfig, hasAdminPin: !!adminPin });
 });
 
 app.post('/api/tvheadend/config', (req: Request, res: Response) => {
-  serverConfig = { ...serverConfig, ...req.body };
-  res.json({ success: true, config: serverConfig });
+  // Avoid overwriting adminPin with empty value via standard config
+  const incoming = { ...req.body };
+  if (!incoming.adminPin) {
+    incoming.adminPin = serverConfig.adminPin;
+  }
+  serverConfig = { ...serverConfig, ...incoming };
+  saveConfigToDb(serverConfig);
+  const { adminPin, ...safeConfig } = serverConfig;
+  res.json({ success: true, config: safeConfig });
 });
 
 app.get('/api/tvheadend/channels', (_req: Request, res: Response) => {

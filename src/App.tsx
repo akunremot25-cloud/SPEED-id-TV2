@@ -22,13 +22,23 @@ import { PWAInstallButton } from './components/PWAInstallButton';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { SubscriberManagerModal } from './components/SubscriberManagerModal';
 import { ActivationCodeModal } from './components/ActivationCodeModal';
+import { AdminLockModal } from './components/AdminLockModal';
 
 export default function App() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Admin Session Authentication State
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('tvh_admin_auth') === 'true';
+    }
+    return false;
+  });
+
   // Client Watching Mode (true = only video and channel list, false = admin/server management)
+  // CRITICAL: Cannot be in admin mode unless genuinely authenticated with admin PIN
   const [isClientMode, setIsClientMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const isStandalone =
@@ -37,11 +47,15 @@ export default function App() {
         (window.navigator as unknown as { standalone?: boolean }).standalone === true;
       if (isStandalone) return true; // Standalone installed apps are always in client watch mode
 
+      const isAuth = sessionStorage.getItem('tvh_admin_auth') === 'true';
       const params = new URLSearchParams(window.location.search);
-      if (params.get('mode') === 'admin') return false;
+
+      // Only enter admin mode if authenticated!
+      if (params.get('mode') === 'admin' && isAuth) return false;
       if (params.get('mode') === 'client' || params.has('client')) return true;
+
       const saved = localStorage.getItem('tvh_app_mode');
-      return saved !== null ? saved === 'client' : true; // Default to client watching mode
+      return saved === 'admin' && isAuth ? false : true;
     }
     return true;
   });
@@ -59,6 +73,10 @@ export default function App() {
     }
     return false;
   });
+
+  const [isAdminLockModalOpen, setIsAdminLockModalOpen] = useState<boolean>(false);
+  const [adminLockModalMode, setAdminLockModalMode] = useState<'unlock' | 'change-pin'>('unlock');
+  const [pendingAdminAction, setPendingAdminAction] = useState<(() => void) | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -202,6 +220,10 @@ export default function App() {
   };
 
   const toggleClientMode = (clientMode: boolean) => {
+    if (!clientMode && !isAdminAuthenticated) {
+      requireAdminAuth();
+      return;
+    }
     setIsClientMode(clientMode);
     localStorage.setItem('tvh_app_mode', clientMode ? 'client' : 'admin');
     setToastMessage(
@@ -209,6 +231,35 @@ export default function App() {
         ? 'Mode Nonton Client aktif: Hanya video & daftar saluran yang ditampilkan.' 
         : 'Mode Kelola Server aktif: Akses penuh tuner & pengaturan saluran terbuka.'
     );
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  const requireAdminAuth = (action?: () => void) => {
+    if (isAdminAuthenticated) {
+      if (action) {
+        action();
+      } else {
+        setIsClientMode(false);
+        localStorage.setItem('tvh_app_mode', 'admin');
+      }
+    } else {
+      setPendingAdminAction(() => action || (() => {
+        setIsClientMode(false);
+        localStorage.setItem('tvh_app_mode', 'admin');
+      }));
+      setAdminLockModalMode('unlock');
+      setIsAdminLockModalOpen(true);
+    }
+  };
+
+  const handleLockAdminPanel = () => {
+    setIsAdminAuthenticated(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('tvh_admin_auth');
+    }
+    setIsClientMode(true);
+    localStorage.setItem('tvh_app_mode', 'client');
+    setToastMessage('Panel Admin telah DIKUNCI. Kembali ke Mode Nonton.');
     setTimeout(() => setToastMessage(null), 3500);
   };
 
@@ -326,27 +377,50 @@ export default function App() {
               </button>
 
               {/* Mode indicator / switcher (discreet toggle for operator) */}
+              {/* Mode indicator / switcher (discreet toggle for operator) */}
               {!isLockedToClient && (
                 <button
-                  onClick={() => toggleClientMode(false)}
-                  className="px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all"
-                  title="Klik untuk membuka Mode Kelola / Server"
+                  onClick={() => requireAdminAuth()}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 hover:text-amber-100 border border-amber-500/40 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+                  title="Klik untuk memasukkan PIN dan membuka Panel Administrator"
                 >
-                  <Eye className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="hidden xs:inline">Mode Nonton</span>
+                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden xs:inline">Masuk Admin</span>
                 </button>
               )}
             </>
           ) : (
             /* Admin Mode specific actions */
             <>
+              {/* Lock Admin Panel (Logout) Button */}
+              <button
+                onClick={handleLockAdminPanel}
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-700 to-rose-700 hover:from-amber-600 hover:to-rose-600 text-white border border-amber-500/60 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-950/50 active:scale-95 transition-all"
+                title="Kunci Panel Admin & Logout"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-200" />
+                <span>Kunci Panel</span>
+              </button>
+
+              {/* Change PIN Button */}
+              <button
+                onClick={() => {
+                  setAdminLockModalMode('change-pin');
+                  setIsAdminLockModalOpen(true);
+                }}
+                className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:text-amber-400 transition-colors"
+                title="Ubah PIN Keamanan Admin"
+              >
+                <KeyRound className="w-4 h-4" />
+              </button>
+
               {/* Subscriber & Activation Code Management Modal Button */}
               <button
                 onClick={() => setIsSubscriberManagerOpen(true)}
                 className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-900/80 to-red-900/80 hover:from-rose-800 hover:to-red-800 text-rose-100 hover:text-white border border-rose-500/50 text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-950/40 active:scale-95 transition-all"
                 title="Kelola Pelanggan, Kode Aktivasi & Matikan Akses Penonton"
               >
-                <KeyRound className="w-3.5 h-3.5 text-rose-400" />
+                <Users className="w-3.5 h-3.5 text-rose-400" />
                 <span className="hidden sm:inline">Kelola Pelanggan</span>
                 <span className="inline-flex sm:hidden">Pelanggan</span>
                 <span className="hidden md:inline-flex items-center px-1.5 py-0.2 rounded-full text-[9px] font-semibold bg-rose-500/30 text-rose-200 border border-rose-500/40">
@@ -411,17 +485,32 @@ export default function App() {
 
       {/* Admin Mode Alert Banner */}
       {!isClientMode && (
-        <div className="bg-blue-950/70 border-b border-blue-800/40 px-4 py-1.5 text-xs text-blue-300 flex items-center justify-between">
+        <div className="bg-gradient-to-r from-amber-950/80 via-slate-900/90 to-rose-950/80 border-b border-amber-500/30 px-3 sm:px-4 py-2 text-xs text-amber-200 flex flex-wrap items-center justify-between gap-2 shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-            <span>Mode Admin & Server aktif. Penonton client hanya akan melihat <strong>Video dan Daftar Saluran</strong>.</span>
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+            <span>
+              Panel Administrator <strong>Terbuka (Tidak Terkunci)</strong>. Anda dapat mengontrol siaran, menambah saluran, dan mematikan kode pelanggan.
+            </span>
           </div>
-          <button
-            onClick={() => toggleClientMode(true)}
-            className="text-xs font-semibold text-white underline hover:text-blue-200 ml-4 shrink-0"
-          >
-            Buka Tampilan Client
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                setAdminLockModalMode('change-pin');
+                setIsAdminLockModalOpen(true);
+              }}
+              className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 font-medium transition-all"
+            >
+              Ubah PIN Admin
+            </button>
+            <button
+              onClick={handleLockAdminPanel}
+              className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold flex items-center gap-1.5 transition-all shadow-sm"
+              title="Kunci Panel Administrator Segera"
+            >
+              <Lock className="w-3 h-3" />
+              <span>Kunci Panel Sekarang</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -616,6 +705,11 @@ export default function App() {
             setIsServerModalOpen(false);
             setIsStreamingProxyOpen(true);
           }}
+          onOpenChangePin={() => {
+            setIsServerModalOpen(false);
+            setAdminLockModalMode('change-pin');
+            setIsAdminLockModalOpen(true);
+          }}
         />
       )}
 
@@ -686,6 +780,27 @@ export default function App() {
         }}
       />
 
+      {/* Admin Security Lock Modal (PIN Verification & Change PIN) */}
+      <AdminLockModal
+        isOpen={isAdminLockModalOpen}
+        defaultMode={adminLockModalMode}
+        onClose={() => {
+          setIsAdminLockModalOpen(false);
+          setPendingAdminAction(null);
+        }}
+        onAuthenticated={() => {
+          setIsAdminAuthenticated(true);
+          setIsClientMode(false);
+          localStorage.setItem('tvh_app_mode', 'admin');
+          setToastMessage('Kunci terbuka! Panel Administrator berhasil diakses.');
+          setTimeout(() => setToastMessage(null), 3500);
+          if (pendingAdminAction) {
+            pendingAdminAction();
+            setPendingAdminAction(null);
+          }
+        }}
+      />
+
       {/* Mobile Quick Drawer for switching channels */}
       <MobileQuickDrawer
         channels={channels}
@@ -695,7 +810,7 @@ export default function App() {
         onSelectChannel={handleSelectChannel}
         onEditChannel={isClientMode ? undefined : (ch) => setEditingChannel(ch)}
         onOpenStreamingProxy={() => setIsStreamingProxyOpen(true)}
-        onOpenSubscribers={() => setIsSubscriberManagerOpen(true)}
+        onOpenSubscribers={() => requireAdminAuth(() => setIsSubscriberManagerOpen(true))}
         onOpenActivation={() => setIsActivationModalOpen(true)}
         isClientMode={isClientMode}
       />

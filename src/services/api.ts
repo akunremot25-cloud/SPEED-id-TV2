@@ -433,3 +433,37 @@ export async function resolveVidioRctiUrl(url: string): Promise<{
   return res.json();
 }
 
+// Admin Security API
+export async function verifyAdminPin(pin: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/admin/verify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pin }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'PIN Admin salah atau tidak valid.');
+  }
+  return data;
+}
+
+export async function changeAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; message: string }> {
+  const res = await fetch(`${API_BASE}/admin/change-pin`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPin, newPin }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || 'Gagal mengubah PIN Admin.');
+  }
+  return data;
+}
+
+export async function fetchAdminStatus(): Promise<{ isProtected: boolean; hasCustomPin: boolean }> {
+  const res = await fetch(`${API_BASE}/admin/status`);
+  if (!res.ok) return { isProtected: true, hasCustomPin: false };
+  return res.json();
+}
+
+

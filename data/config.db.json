@@ -1,0 +1,13 @@
+{
+  "mode": "standalone",
+  "host": "127.0.0.1",
+  "port": 9981,
+  "username": "admin",
+  "password": "",
+  "adminPin": "123456",
+  "streamProfile": "webtv-h264-aac-matroska",
+  "useProxy": true,
+  "transcodingEnabled": true,
+  "bufferSeconds": 15,
+  "lowLatencyMode": true
+}
