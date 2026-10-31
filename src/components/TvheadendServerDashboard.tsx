@@ -7,7 +7,8 @@ import {
 import { TunerStatus, TvheadendServerConfig } from '../types/tvheadend';
 import { 
   fetchTuners, fetchServerConfig, updateServerConfig, fetchServerHealth,
-  fetchChannels, syncAllChannelsToDatabase, resetDatabaseToDefault
+  fetchChannels, syncAllChannelsToDatabase, resetDatabaseToDefault,
+  syncAdminPinWithFirestore
 } from '../services/api';
 
 interface TvheadendServerDashboardProps {
@@ -39,7 +40,10 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
   const [isSyncingDb, setIsSyncingDb] = useState<boolean>(false);
+  const [confirmResetOpen, setConfirmResetOpen] = useState<boolean>(false);
   const [dbNotice, setDbNotice] = useState<string | null>(null);
+  const [isSyncingPin, setIsSyncingPin] = useState<boolean>(false);
+  const [pinSyncNotice, setPinSyncNotice] = useState<string | null>(null);
 
   const playlistUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/tvheadend/playlist.m3u` : '/api/tvheadend/playlist.m3u';
 
@@ -81,8 +85,8 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
   };
 
   const handleResetDatabase = async () => {
-    if (!confirm('Apakah Anda yakin ingin mereset seluruh database saluran ke pengaturan standar bawaan?')) return;
     setIsSyncingDb(true);
+    setConfirmResetOpen(false);
     try {
       await resetDatabaseToDefault();
       setDbNotice('Database saluran berhasil direset ke konfigurasi bawaan.');
@@ -113,6 +117,20 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
     navigator.clipboard.writeText(playlistUrl);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const handleSyncPinCloud = async () => {
+    setIsSyncingPin(true);
+    try {
+      const res = await syncAdminPinWithFirestore();
+      setPinSyncNotice(res.synced ? 'PIN admin berhasil disinkronkan dengan Cloud Firestore.' : 'PIN Cloud Firestore sudah terhubung.');
+      setTimeout(() => setPinSyncNotice(null), 3500);
+    } catch {
+      setPinSyncNotice('Gagal menyinkronkan PIN ke Cloud.');
+      setTimeout(() => setPinSyncNotice(null), 3500);
+    } finally {
+      setIsSyncingPin(false);
+    }
   };
 
   return (
@@ -264,22 +282,43 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
                   <span className="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/10 text-amber-300 font-semibold border border-amber-500/20">
                     Aktif Terproteksi
                   </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/10 text-emerald-300 font-semibold border border-emerald-500/20 flex items-center gap-1">
+                    <Database className="w-2.5 h-2.5 text-emerald-400" />
+                    <span>Cloud Sync</span>
+                  </span>
                 </h4>
                 <p className="text-xs text-slate-400">
                   Panel pengelola terkunci dengan PIN sandi. PIN bawaan pertama: <strong className="text-amber-300 font-mono">123456</strong>
                 </p>
+                {pinSyncNotice && (
+                  <p className="text-xs text-emerald-300 font-medium mt-1 animate-in fade-in">
+                    {pinSyncNotice}
+                  </p>
+                )}
               </div>
             </div>
-            {onOpenChangePin && (
+            <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={onOpenChangePin}
-                className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow active:scale-95 transition-all"
+                onClick={handleSyncPinCloud}
+                disabled={isSyncingPin}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow active:scale-95 transition-all cursor-pointer"
+                title="Sinkronkan status PIN dengan Cloud Firestore"
               >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Ubah PIN Admin</span>
+                <Database className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingPin ? 'animate-spin' : ''}`} />
+                <span>{isSyncingPin ? 'Menyinkronkan...' : 'Sinkronkan PIN Cloud'}</span>
               </button>
-            )}
+              {onOpenChangePin && (
+                <button
+                  type="button"
+                  onClick={onOpenChangePin}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow active:scale-95 transition-all cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Ubah PIN Admin</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* M3U Playlist Export for External Mobile Apps (VLC / TiviMate) */}
@@ -353,16 +392,37 @@ export const TvheadendServerDashboard: React.FC<TvheadendServerDashboardProps> =
                   <span>{isSyncingDb ? 'Menyimpan...' : 'Simpan Semua Saluran ke DB'}</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleResetDatabase}
-                  disabled={isSyncingDb}
-                  className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all"
-                  title="Reset seluruh saluran ke daftar default"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Reset Bawaan</span>
-                </button>
+                {confirmResetOpen ? (
+                  <div className="flex items-center gap-1.5 bg-rose-950/40 border border-rose-500/40 px-2.5 py-1 rounded-xl">
+                    <span className="text-[11px] text-rose-300 font-medium">Reset semua?</span>
+                    <button
+                      type="button"
+                      onClick={handleResetDatabase}
+                      disabled={isSyncingDb}
+                      className="px-2 py-0.5 bg-rose-600 hover:bg-rose-500 text-white rounded text-[11px] font-bold shadow"
+                    >
+                      {isSyncingDb ? 'Resetting...' : 'Ya'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmResetOpen(false)}
+                      className="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-[11px]"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmResetOpen(true)}
+                    disabled={isSyncingDb}
+                    className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-semibold flex items-center gap-1.5 active:scale-95 transition-all"
+                    title="Reset seluruh saluran ke daftar default"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Reset Bawaan</span>
+                  </button>
+                )}
               </div>
             </div>
 

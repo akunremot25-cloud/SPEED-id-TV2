@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   X, Users, Plus, Shield, Power, Check, Copy, RefreshCw, 
   Search, Calendar, Phone, AlertTriangle, Clock, ExternalLink,
-  Tv, Lock, Unlock, CheckCircle2, XCircle, Trash2, Edit3, KeyRound
+  Tv, Lock, Unlock, CheckCircle2, XCircle, Trash2, Edit3, KeyRound, Database
 } from 'lucide-react';
 import { Subscriber, SubscriptionStatus } from '../types/subscriber';
 import { 
   fetchSubscribers, createSubscriber, updateSubscriber, 
-  deleteSubscriber, toggleSubscriberStatus, generateRandomCode 
+  deleteSubscriber, toggleSubscriberStatus, generateRandomCode,
+  syncAllSubscribers
 } from '../services/subscriberApi';
 
 interface SubscriberManagerModalProps {
@@ -23,10 +24,12 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
 }) => {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'disabled' | 'expired'>('all');
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [subscriberToDelete, setSubscriberToDelete] = useState<Subscriber | null>(null);
 
   // New Subscriber Form State
   const [isAddFormOpen, setIsAddFormOpen] = useState<boolean>(false);
@@ -41,6 +44,10 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       loadSubscribersList();
+      // Automatic background two-way sync with Cloud Firestore
+      syncAllSubscribers()
+        .then(() => loadSubscribersList())
+        .catch(() => {});
     }
   }, [isOpen]);
 
@@ -53,6 +60,21 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
       console.error('Gagal memuat pelanggan:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Full Two-Way Synchronization between Local Server and Cloud Firestore
+  const handleManualSync = async () => {
+    try {
+      setIsSyncing(true);
+      const res = await syncAllSubscribers();
+      showCopyToast(`Sinkronisasi selesai: ${res.count} pelanggan tersinkron dengan Cloud Firestore & Server.`);
+      await loadSubscribersList();
+    } catch (err) {
+      console.error('Gagal sinkronisasi data pelanggan:', err);
+      showCopyToast('Gagal sinkronisasi dengan Cloud Firestore.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -109,18 +131,28 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
     }
   };
 
-  // Delete subscriber
-  const handleDelete = async (sub: Subscriber) => {
-    if (!confirm(`Hapus pelanggan ${sub.name} (${sub.code})? Akses siaran akan terputus permanen.`)) {
-      return;
-    }
+  // Trigger in-app confirmation modal for deletion
+  const handleDeleteClick = (sub: Subscriber) => {
+    setSubscriberToDelete(sub);
+  };
+
+  // Execute deletion after user confirms in modal
+  const handleConfirmDelete = async () => {
+    if (!subscriberToDelete) return;
+    const target = subscriberToDelete;
     try {
-      setActionLoadingId(sub.id);
-      await deleteSubscriber(sub.id);
-      setSubscribers((prev) => prev.filter((s) => s.id !== sub.id));
-      showCopyToast(`Pelanggan ${sub.name} berhasil dihapus.`);
+      setActionLoadingId(target.id);
+      // Optimistically remove from list immediately
+      setSubscribers((prev) => prev.filter((s) => s.id !== target.id));
+      setSubscriberToDelete(null);
+
+      // Perform persistent deletion on server & Firestore
+      await deleteSubscriber(target.id, target.code);
+      showCopyToast(`Pelanggan "${target.name}" (${target.code}) berhasil dihapus.`);
     } catch (err) {
       console.error('Gagal menghapus pelanggan:', err);
+      showCopyToast(`Gagal menghapus pelanggan ${target.name}.`);
+      loadSubscribersList();
     } finally {
       setActionLoadingId(null);
     }
@@ -224,12 +256,16 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
               <KeyRound className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                 <h2 className="text-xl font-bold text-white tracking-wide">
                   Manajemen Pelanggan & Kode Aktivasi
                 </h2>
                 <span className="px-2 py-0.5 text-xs font-semibold bg-rose-500/20 text-rose-300 rounded-full border border-rose-500/30">
                   Kontrol Penonton
+                </span>
+                <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-500/20 text-emerald-300 rounded-full border border-emerald-500/30 flex items-center space-x-1">
+                  <Database className="w-3 h-3 text-emerald-400" />
+                  <span>Cloud DB Terhubung</span>
                 </span>
               </div>
               <p className="text-xs text-slate-400">
@@ -333,13 +369,26 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
               </div>
             </div>
 
-            <button
-              onClick={() => setIsAddFormOpen(!isAddFormOpen)}
-              className="flex items-center justify-center space-x-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-rose-950/40"
-            >
-              <Plus className="w-4 h-4" />
-              <span>{isAddFormOpen ? 'Tutup Formulir' : 'Buat Kode Aktivasi Baru'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className="flex items-center justify-center space-x-1.5 bg-slate-800 hover:bg-slate-700 active:scale-95 border border-slate-700 text-slate-200 px-3.5 py-2.5 rounded-xl font-medium text-xs transition-all shadow-md shrink-0 cursor-pointer"
+                title="Sinkronkan seluruh data pelanggan antara Server dan Cloud Firestore"
+              >
+                <Database className={`w-3.5 h-3.5 text-emerald-400 ${isSyncing ? 'animate-spin' : ''}`} />
+                <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Cloud DB'}</span>
+              </button>
+
+              <button
+                onClick={() => setIsAddFormOpen(!isAddFormOpen)}
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-rose-950/40 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>{isAddFormOpen ? 'Tutup Formulir' : 'Buat Kode Aktivasi Baru'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Form: Tambah Pelanggan / Kode Baru */}
@@ -660,10 +709,10 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
 
                         {/* Delete Button */}
                         <button
-                          onClick={() => handleDelete(sub)}
+                          onClick={() => handleDeleteClick(sub)}
                           disabled={actionLoadingId === sub.id}
-                          title="Hapus Pelanggan"
-                          className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl transition-colors"
+                          title={`Hapus Pelanggan ${sub.name}`}
+                          className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -689,6 +738,80 @@ export const SubscriberManagerModal: React.FC<SubscriberManagerModalProps> = ({
             Tutup
           </button>
         </div>
+
+        {/* In-App Delete Confirmation Modal (Replaces blocked window.confirm) */}
+        {subscriberToDelete && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-slate-900 border border-rose-500/50 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-rose-500/20 border border-rose-500/30 rounded-xl text-rose-400">
+                  <AlertTriangle className="w-6 h-6 text-rose-500" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Hapus Pelanggan?</h3>
+                  <p className="text-xs text-rose-400 font-medium">Akses siaran akan diputus permanen</p>
+                </div>
+              </div>
+
+              <div className="bg-slate-950 border border-slate-800 rounded-xl p-3.5 space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Nama Pelanggan:</span>
+                  <span className="font-semibold text-white">{subscriberToDelete.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Kode Aktivasi:</span>
+                  <span className="font-mono font-bold text-rose-300 bg-slate-900 px-2 py-0.5 rounded border border-rose-500/30 tracking-wider">
+                    {subscriberToDelete.code}
+                  </span>
+                </div>
+                {subscriberToDelete.phone && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-400">Nomor WhatsApp/HP:</span>
+                    <span className="text-slate-200">{subscriberToDelete.phone}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Paket Saluran:</span>
+                  <span className="text-slate-300 uppercase font-medium">
+                    {subscriberToDelete.package === 'all' ? 'Semua Saluran' : subscriberToDelete.package}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 pt-2 leading-relaxed border-t border-slate-800/80">
+                  Data pelanggan dan kode aktivasi akan dihapus secara permanen dari server dan database. Perangkat pelanggan tidak dapat lagi mengakses siaran.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSubscriberToDelete(null)}
+                  disabled={actionLoadingId === subscriberToDelete.id}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-colors border border-slate-700"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  disabled={actionLoadingId === subscriberToDelete.id}
+                  className="px-4 py-2 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-lg shadow-rose-900/30"
+                >
+                  {actionLoadingId === subscriberToDelete.id ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menghapus...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Ya, Hapus Sekarang</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

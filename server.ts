@@ -657,6 +657,18 @@ app.post('/api/admin/change-pin', (req: Request, res: Response) => {
   res.json({ success: true, message: 'PIN Admin berhasil diubah dan disimpan!' });
 });
 
+// Sync admin PIN from Cloud Firestore
+app.post('/api/admin/sync-pin', (req: Request, res: Response) => {
+  const { pin } = req.body;
+  if (pin && typeof pin === 'string' && pin.trim().length >= 4) {
+    serverConfig.adminPin = pin.trim();
+    saveConfigToDb(serverConfig);
+    res.json({ success: true, message: 'PIN Admin berhasil disinkronkan ke server.' });
+  } else {
+    res.status(400).json({ success: false, message: 'PIN tidak valid untuk disinkronkan.' });
+  }
+});
+
 app.get('/api/admin/status', (_req: Request, res: Response) => {
   res.json({
     isProtected: true,
@@ -921,12 +933,45 @@ app.delete('/api/subscribers/:id', (req: Request, res: Response) => {
   const id = req.params.id;
   const initialLen = subscribers.length;
   subscribers = subscribers.filter((s) => s.id !== id && s.code.toUpperCase() !== id.toUpperCase());
-  if (subscribers.length === initialLen) {
-    res.status(404).json({ error: 'Pelanggan tidak ditemukan' });
+  if (subscribers.length !== initialLen) {
+    saveSubscribersToDb(subscribers);
+  }
+  res.json({ success: true, message: 'Pelanggan berhasil dihapus' });
+});
+
+// Bulk synchronize subscribers between Cloud Firestore and local server
+app.post('/api/subscribers/sync', (req: Request, res: Response) => {
+  const incomingList = req.body?.subscribers;
+  if (!Array.isArray(incomingList)) {
+    res.status(400).json({ error: 'Data subscribers tidak valid (harus array)' });
     return;
   }
+
+  const existingMap = new Map<string, ServerSubscriber>();
+  subscribers.forEach((s) => existingMap.set(s.id, s));
+
+  // Merge incoming subscribers
+  incomingList.forEach((incoming: any) => {
+    if (incoming && incoming.id && incoming.code) {
+      const prev = existingMap.get(incoming.id);
+      existingMap.set(incoming.id, {
+        ...(prev || {}),
+        ...incoming,
+        id: incoming.id,
+        code: incoming.code.trim().toUpperCase(),
+        name: incoming.name || prev?.name || 'Pelanggan',
+        status: incoming.status || prev?.status || 'active',
+        package: incoming.package || prev?.package || 'all',
+        expiresAt: incoming.expiresAt || prev?.expiresAt || 'permanent',
+        deviceLimit: Number(incoming.deviceLimit) || prev?.deviceLimit || 1,
+        createdAt: incoming.createdAt || prev?.createdAt || new Date().toISOString(),
+      });
+    }
+  });
+
+  subscribers = Array.from(existingMap.values());
   saveSubscribersToDb(subscribers);
-  res.json({ success: true, message: 'Pelanggan berhasil dihapus' });
+  res.json({ success: true, count: subscribers.length, subscribers });
 });
 
 // Dynamic M3U playlist export for mobile IPTV apps (VLC, TiviMate, OTT Navigator, etc.)

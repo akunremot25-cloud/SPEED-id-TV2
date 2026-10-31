@@ -35,6 +35,13 @@ service cloud.firestore {
         data.expiresAt is string;
     }
 
+    function isValidSetting(data) {
+      return data.keys().hasAll(['id', 'adminPin', 'updatedAt']) &&
+        data.id is string && data.id.size() <= 64 &&
+        data.adminPin is string && data.adminPin.size() <= 64 &&
+        data.updatedAt is string;
+    }
+
     // Channels collection
     match /channels/{channelId} {
       // Anyone can read channels (live viewing for all clients)
@@ -63,6 +70,14 @@ service cloud.firestore {
 
       // Allow deleting subscriber
       allow delete: if isValidId(subscriberId);
+    }
+
+    // System settings & Administrator PIN collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create: if isValidId(settingId) && isValidSetting(incoming());
+      allow update: if isValidId(settingId) && isValidSetting(incoming());
+      allow delete: if isValidId(settingId);
     }
   }
 }

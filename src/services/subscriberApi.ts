@@ -17,7 +17,68 @@ export function generateRandomCode(prefix: string = 'SPEED'): string {
   return `${prefix}-${segment(4)}-${segment(4)}`;
 }
 
-// Fetch all subscribers
+// Full two-way synchronization between Local Server and Cloud Firestore
+export async function syncAllSubscribers(): Promise<{ count: number; serverCount: number; firestoreCount: number }> {
+  let serverList: Subscriber[] = [];
+  try {
+    const res = await fetch(`${API_BASE}/subscribers`);
+    if (res.ok) {
+      serverList = await res.json();
+    }
+  } catch (err) {
+    console.warn('Gagal memuat list subscriber server:', err);
+  }
+
+  const mergedMap = new Map<string, Subscriber>();
+  serverList.forEach((s) => mergedMap.set(s.id, s));
+
+  let fsList: Subscriber[] = [];
+  try {
+    const snap = await getDocs(collection(db, 'subscribers'));
+    snap.docs.forEach((d) => {
+      const data = d.data() as Subscriber;
+      fsList.push(data);
+      if (!mergedMap.has(d.id)) {
+        mergedMap.set(d.id, data);
+      } else {
+        const prev = mergedMap.get(d.id)!;
+        mergedMap.set(d.id, {
+          ...prev,
+          ...data,
+        });
+      }
+    });
+
+    // Write all merged subscribers to Firestore in batch
+    const batch = writeBatch(db);
+    Array.from(mergedMap.values()).forEach((sub) => {
+      batch.set(doc(db, 'subscribers', sub.id), sub, { merge: true });
+    });
+    await batch.commit();
+  } catch (err) {
+    console.warn('Gagal sinkronisasi batch ke Firestore:', err);
+  }
+
+  const allSubscribers = Array.from(mergedMap.values());
+  // Sync merged list back to server backend
+  try {
+    await fetch(`${API_BASE}/subscribers/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscribers: allSubscribers }),
+    });
+  } catch (err) {
+    console.warn('Gagal sinkronisasi data subscriber ke server:', err);
+  }
+
+  return {
+    count: allSubscribers.length,
+    serverCount: serverList.length,
+    firestoreCount: fsList.length,
+  };
+}
+
+// Fetch all subscribers with automatic Cloud Firestore sync
 export async function fetchSubscribers(): Promise<Subscriber[]> {
   let serverList: Subscriber[] = [];
   try {
@@ -53,6 +114,13 @@ export async function fetchSubscribers(): Promise<Subscriber[]> {
       });
 
       serverList = Array.from(fsMap.values());
+
+      // Sync merged result back to server so server DB remains complete
+      fetch(`${API_BASE}/subscribers/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscribers: serverList }),
+      }).catch(() => {});
     }
   } catch (err) {
     console.warn('Firestore subscribers sync note:', err);
@@ -145,10 +213,13 @@ export async function toggleSubscriberStatus(id: string, currentStatus: Subscrip
 }
 
 // Delete subscriber
-export async function deleteSubscriber(id: string): Promise<boolean> {
+export async function deleteSubscriber(id: string, code?: string): Promise<boolean> {
   // 1. Delete from server
   try {
-    await fetch(`${API_BASE}/subscribers/${id}`, { method: 'DELETE' });
+    const res = await fetch(`${API_BASE}/subscribers/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!res.ok && res.status !== 404) {
+      console.warn(`Server status saat hapus subscriber: ${res.status}`);
+    }
   } catch (err) {
     console.warn('Gagal hapus dari server lokal:', err);
   }
@@ -157,7 +228,16 @@ export async function deleteSubscriber(id: string): Promise<boolean> {
   try {
     await deleteDoc(doc(db, 'subscribers', id));
   } catch (err) {
-    handleFirestoreError(err, OperationType.DELETE, `subscribers/${id}`);
+    console.warn('Firestore delete note:', err);
+  }
+
+  // If code is provided and distinct from id, ensure any doc indexed by code is also removed
+  if (code && code !== id) {
+    try {
+      await deleteDoc(doc(db, 'subscribers', code));
+    } catch {
+      // ignore
+    }
   }
 
   return true;

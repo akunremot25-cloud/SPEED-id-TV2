@@ -1,6 +1,6 @@
 import { Channel, TvheadendServerConfig, TunerStatus } from '../types/tvheadend';
 import { db, handleFirestoreError, OperationType } from '../firebase/config';
-import { collection, doc, getDocs, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 export const API_BASE = '/api';
 
@@ -433,37 +433,144 @@ export async function resolveVidioRctiUrl(url: string): Promise<{
   return res.json();
 }
 
-// Admin Security API
+// Admin Security API with Cloud Firestore Synchronization
 export async function verifyAdminPin(pin: string): Promise<{ success: boolean; message: string }> {
-  const res = await fetch(`${API_BASE}/admin/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(data.message || 'PIN Admin salah atau tidak valid.');
+  const cleanPin = pin.trim();
+
+  // 1. Attempt verifying via local server API
+  try {
+    const res = await fetch(`${API_BASE}/admin/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin: cleanPin }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.success) {
+      return data;
+    }
+  } catch (err) {
+    console.warn('Server error saat verifikasi PIN, memeriksa Cloud Firestore:', err);
   }
-  return data;
+
+  // 2. Cross-verify with Cloud Firestore (database ai-studio-speedidtv-91365c14-8252-4789-8613-84f911725a47)
+  try {
+    const docSnap = await getDoc(doc(db, 'settings', 'admin_pin'));
+    if (docSnap.exists()) {
+      const fsData = docSnap.data();
+      const fsPin = fsData.adminPin?.trim();
+      if (fsPin && fsPin === cleanPin) {
+        // Sync to server so server cache matches Firestore
+        fetch(`${API_BASE}/admin/sync-pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: cleanPin }),
+        }).catch(() => {});
+
+        return { success: true, message: 'PIN Admin valid (terverifikasi via Cloud Firestore).' };
+      }
+    }
+  } catch (fsErr) {
+    console.warn('Firestore PIN verification error:', fsErr);
+  }
+
+  throw new Error('PIN Admin salah atau tidak valid.');
 }
 
 export async function changeAdminPin(currentPin: string, newPin: string): Promise<{ success: boolean; message: string }> {
+  const cleanNewPin = newPin.trim();
+
+  // 1. Update on backend server
   const res = await fetch(`${API_BASE}/admin/change-pin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ currentPin, newPin }),
+    body: JSON.stringify({ currentPin, newPin: cleanNewPin }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.message || 'Gagal mengubah PIN Admin.');
   }
-  return data;
+
+  // 2. Synchronize new PIN immediately to Cloud Firestore
+  try {
+    await setDoc(doc(db, 'settings', 'admin_pin'), {
+      id: 'admin_pin',
+      adminPin: cleanNewPin,
+      hasCustomPin: cleanNewPin !== '123456',
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('Peringatan: Gagal menyimpan PIN ke Cloud Firestore:', err);
+  }
+
+  return {
+    success: true,
+    message: 'PIN Admin berhasil diubah dan disinkronkan ke Cloud Firestore & Server!',
+  };
+}
+
+// Sync Admin PIN from Cloud Firestore to Server
+export async function syncAdminPinWithFirestore(): Promise<{ synced: boolean; pin?: string }> {
+  try {
+    const docSnap = await getDoc(doc(db, 'settings', 'admin_pin'));
+    if (docSnap.exists()) {
+      const fsData = docSnap.data();
+      const fsPin = fsData.adminPin?.trim();
+      if (fsPin) {
+        await fetch(`${API_BASE}/admin/sync-pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: fsPin }),
+        });
+        return { synced: true, pin: fsPin };
+      }
+    } else {
+      // Initialize default PIN in Firestore if not existing yet
+      await setDoc(doc(db, 'settings', 'admin_pin'), {
+        id: 'admin_pin',
+        adminPin: '123456',
+        hasCustomPin: false,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.warn('Sync Admin PIN with Firestore error:', err);
+  }
+  return { synced: false };
 }
 
 export async function fetchAdminStatus(): Promise<{ isProtected: boolean; hasCustomPin: boolean }> {
-  const res = await fetch(`${API_BASE}/admin/status`);
-  if (!res.ok) return { isProtected: true, hasCustomPin: false };
-  return res.json();
+  let status = { isProtected: true, hasCustomPin: false };
+  try {
+    const res = await fetch(`${API_BASE}/admin/status`);
+    if (res.ok) {
+      status = await res.json();
+    }
+  } catch {
+    // fallback
+  }
+
+  // Cross-check with Cloud Firestore
+  try {
+    const docSnap = await getDoc(doc(db, 'settings', 'admin_pin'));
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.hasCustomPin) {
+        status.hasCustomPin = true;
+      }
+      // If server doesn't have custom PIN yet, sync it
+      if (data.adminPin && !status.hasCustomPin) {
+        fetch(`${API_BASE}/admin/sync-pin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: data.adminPin }),
+        }).catch(() => {});
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return status;
 }
 
 

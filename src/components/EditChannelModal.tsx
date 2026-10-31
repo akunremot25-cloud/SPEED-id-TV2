@@ -32,6 +32,7 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
   const [videoCodec, setVideoCodec] = useState(channel.videoCodec || 'H.264');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
@@ -101,13 +102,15 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus saluran "${channel.name}"?`)) return;
     try {
+      setIsSubmitting(true);
       await deleteChannel(channel.id);
       onChannelDeleted?.(channel.id);
       onClose();
     } catch (err: any) {
       setErrorMsg(err.message || 'Gagal menghapus saluran');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -352,15 +355,36 @@ export const EditChannelModal: React.FC<EditChannelModalProps> = ({
             </div>
 
             {/* Bottom Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-800">
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-medium flex items-center gap-1.5 active:scale-95 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Hapus Saluran</span>
-              </button>
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-800">
+              {confirmDeleteOpen ? (
+                <div className="flex items-center gap-2 bg-rose-950/40 border border-rose-500/40 px-3 py-1.5 rounded-xl">
+                  <span className="text-xs text-rose-300 font-medium">Hapus permanen saluran ini?</span>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={isSubmitting}
+                    className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-all shadow-md"
+                  >
+                    {isSubmitting ? 'Menghapus...' : 'Ya, Hapus'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDeleteOpen(false)}
+                    className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors"
+                  >
+                    Batal
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteOpen(true)}
+                  className="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl font-medium flex items-center gap-1.5 active:scale-95 transition-all text-xs"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Saluran</span>
+                </button>
+              )}
 
               <div className="flex items-center gap-2">
                 <button

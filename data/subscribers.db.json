@@ -10,8 +10,8 @@
     "expiresAt": "permanent",
     "deviceLimit": 3,
     "notes": "Akun demonstrasi akses penuh seumur hidup",
-    "lastActiveAt": "2026-10-29T16:04:40.027Z",
-    "lastIp": "127.0.0.1"
+    "lastActiveAt": "2026-10-31T06:18:57.997Z",
+    "lastIp": "157.20.144.171"
   },
   {
     "id": "sub-demo-01",
@@ -24,17 +24,5 @@
     "expiresAt": "2026-11-28T16:04:26.670Z",
     "deviceLimit": 2,
     "notes": "Paket Bulanan 30 Hari"
-  },
-  {
-    "id": "sub-demo-off",
-    "code": "SPEED-OFF-TRIAL",
-    "name": "Penonton Uji Coba (Contoh Dimatikan)",
-    "phone": "+6289988776655",
-    "status": "disabled",
-    "package": "nasional",
-    "createdAt": "2026-10-29T16:04:26.670Z",
-    "expiresAt": "2026-11-05T16:04:26.670Z",
-    "deviceLimit": 1,
-    "notes": "Status dinonaktifkan oleh administrator untuk pengujian kontrol"
   }
 ]

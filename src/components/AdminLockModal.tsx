@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Lock, Unlock, ShieldCheck, KeyRound, AlertTriangle, 
-  X, Check, Delete, Key, Sparkles, RefreshCw, Eye, EyeOff
+  X, Check, Delete, Key, Sparkles, RefreshCw, Eye, EyeOff, Database
 } from 'lucide-react';
-import { verifyAdminPin, changeAdminPin, fetchAdminStatus } from '../services/api';
+import { verifyAdminPin, changeAdminPin, fetchAdminStatus, syncAdminPinWithFirestore } from '../services/api';
 
 interface AdminLockModalProps {
   isOpen: boolean;
@@ -44,6 +44,8 @@ export const AdminLockModal: React.FC<AdminLockModalProps> = ({
       fetchAdminStatus()
         .then(setAdminStatus)
         .catch(() => {});
+      // Ensure PIN sync between Cloud Firestore and server
+      syncAdminPinWithFirestore().catch(() => {});
     }
   }, [isOpen, defaultMode]);
 
@@ -150,6 +152,12 @@ export const AdminLockModal: React.FC<AdminLockModalProps> = ({
                 ? 'Masukkan PIN keamanan untuk mengakses panel pengelola siaran & pelanggan.'
                 : 'Buat PIN baru untuk mengamankan akses administrator panel ini.'}
             </p>
+            <div className="flex items-center justify-center gap-1.5 mt-2">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+                <Database className="w-2.5 h-2.5 text-emerald-400" />
+                <span>Cloud Firestore Sync Aktif</span>
+              </span>
+            </div>
           </div>
         </div>
 
@@ -324,6 +332,12 @@ export const AdminLockModal: React.FC<AdminLockModalProps> = ({
                 onChange={(e) => setConfirmPin(e.target.value)}
                 className="w-full bg-slate-800 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2 text-sm font-mono text-white placeholder-slate-500 focus:outline-none"
               />
+            </div>
+
+            {/* Cloud Sync info */}
+            <div className="p-2.5 rounded-xl bg-slate-800/80 border border-slate-700/80 text-[11px] text-slate-300 flex items-center gap-2">
+              <Database className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span>PIN baru otomatis disinkronkan ke Server & Cloud Firestore Database.</span>
             </div>
 
             <div className="flex space-x-2 pt-2">

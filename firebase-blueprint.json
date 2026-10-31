@@ -129,6 +129,31 @@
         }
       },
       "required": ["id", "code", "name", "status", "createdAt", "expiresAt"]
+    },
+    "SystemSetting": {
+      "title": "SystemSetting",
+      "description": "Global server configuration, security, and administrator PIN settings",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Setting document identifier (e.g. admin_pin, security)"
+        },
+        "adminPin": {
+          "type": "string",
+          "description": "Active administrator PIN code",
+          "maxLength": 64
+        },
+        "hasCustomPin": {
+          "type": "boolean",
+          "description": "Whether a custom administrator PIN has been established"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["id", "adminPin", "updatedAt"]
     }
   },
   "firestore": {
@@ -143,6 +168,12 @@
         "$ref": "Subscriber"
       },
       "description": "Collection of subscriber activation codes and control status"
+    },
+    "/settings/{settingId}": {
+      "schema": {
+        "$ref": "SystemSetting"
+      },
+      "description": "Collection of server security and administrator PIN settings"
     }
   }
 }
