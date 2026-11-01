@@ -7,15 +7,15 @@
     "status": "active",
     "package": "all",
     "createdAt": "2026-10-29T16:04:26.670Z",
-    "expiresAt": "permanent",
+    "expiresAt": "1d",
     "deviceLimit": 3,
     "notes": "Akun demonstrasi akses penuh seumur hidup",
     "lastActiveAt": "2026-10-31T06:18:57.997Z",
     "lastIp": "157.20.144.171"
   },
   {
-    "id": "sub-demo-01",
-    "code": "SPEED-8821-4912",
+    "id": "TV12",
+    "code": "SPEED-12",
     "name": "Budi Santoso (Living Room)",
     "phone": "+6285712348899",
     "status": "active",
