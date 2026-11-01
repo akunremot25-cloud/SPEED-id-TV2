@@ -117,7 +117,27 @@ export default function App() {
     }
 
     // Event listener for stream access cutoff (403 from proxy when admin turns off code)
-    const handleStreamDenied = (e: any) => {
+    const handleStreamDenied = async (e: any) => {
+      // Check if subscriber code is still active & valid before forcing activation modal
+      const storedCode = localStorage.getItem('tvh_subscriber_code');
+      if (storedCode) {
+        try {
+          const res = await verifyActivationCode(storedCode);
+          if (res.valid) {
+            // Code is completely valid! This is an upstream channel error, not subscriber denial
+            console.warn('tvh:stream-access-denied diabaikan: kode aktivasi penonton masih aktif & valid.');
+            return;
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      // If user is in Admin / Server Management Mode, do not force open viewer activation modal
+      if (!isClientMode) {
+        return;
+      }
+
       const reason = e.detail?.reason || 'Akses siaran Anda telah dinonaktifkan oleh administrator.';
       setAccessDeniedReason(reason);
       setIsActivationModalOpen(true);

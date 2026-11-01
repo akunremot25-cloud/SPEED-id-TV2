@@ -1606,6 +1606,7 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
   if (clientCode) {
     const check = checkSubscriberCode(clientCode);
     if (!check.valid) {
+      res.setHeader('X-Tvh-Subscriber-Denied', 'true');
       res.status(403).json({
         error: check.reason || 'Akses siaran Anda telah dinonaktifkan oleh administrator.',
         status: check.status || 'disabled',
@@ -1801,6 +1802,15 @@ app.get('/api/proxy/stream', async (req: Request, res: Response): Promise<void> 
       res.status(206);
       const cr = upstreamResponse.headers.get('content-range');
       if (cr) res.setHeader('Content-Range', cr);
+    } else if (upstreamResponse.status === 403) {
+      // Upstream origin rejected request (e.g. anti-hotlink CDN or expired stream)
+      // Return 502 Bad Gateway to prevent client player from misidentifying this as subscriber activation revocation
+      res.setHeader('X-Upstream-Status', '403');
+      res.setHeader('X-Upstream-Host', targetUrl.hostname);
+      res.status(502);
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.send(`Server sumber siaran (${targetUrl.hostname}) membatasi akses atau siaran sedang offline (Upstream HTTP 403).`);
+      return;
     } else {
       res.status(upstreamResponse.status);
     }

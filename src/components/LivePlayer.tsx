@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Channel, StreamHealth } from '../types/tvheadend';
 import { getProxyStreamUrl } from '../services/api';
+import { verifyActivationCode } from '../services/subscriberApi';
 
 interface LivePlayerProps {
   channel: Channel;
@@ -607,16 +608,37 @@ export const LivePlayer: React.FC<LivePlayerProps> = ({
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        // Detect if administrator turned off access for this subscriber code
+        // Distinguish between actual subscriber access denial vs upstream channel server restriction
         const respCode = data.response?.code || (data.response as any)?.status;
         if (respCode === 403) {
-          console.warn('Akses siaran 403 Forbidden - Dimatikan oleh admin');
-          setErrorMsg('Akses siaran Anda telah DINONAKTIFKAN oleh administrator. Silakan hubungi admin untuk mengaktifkan kembali.');
-          setIsLoading(false);
-          hls.destroy();
-          window.dispatchEvent(new CustomEvent('tvh:stream-access-denied', { 
-            detail: { code: 403, reason: 'Akses siaran Anda telah dinonaktifkan oleh administrator.' } 
-          }));
+          const activeCode = typeof localStorage !== 'undefined' ? localStorage.getItem('tvh_subscriber_code') : null;
+          if (activeCode) {
+            // Verify if subscriber code is genuinely disabled by admin
+            verifyActivationCode(activeCode).then((check) => {
+              if (!check.valid) {
+                console.warn('Akses siaran 403 - Kode aktivasi pelanggan dinonaktifkan:', activeCode);
+                setErrorMsg('Akses siaran Anda telah DINONAKTIFKAN oleh administrator. Silakan hubungi admin untuk mengaktifkan kembali.');
+                setIsLoading(false);
+                hls.destroy();
+                window.dispatchEvent(new CustomEvent('tvh:stream-access-denied', { 
+                  detail: { code: 403, reason: check.reason || 'Akses siaran Anda telah dinonaktifkan oleh administrator.' } 
+                }));
+              } else {
+                // The subscriber code is active & valid! This is an UPSTREAM stream restriction / expired link on this channel
+                console.warn(`Upstream stream 403 pada saluran "${channel.name}": Sumber siaran offline.`);
+                setErrorMsg(`Siaran "${channel.name}" sedang offline atau dibatasi oleh server sumber penyedia (HTTP 403). Silakan coba saluran lain.`);
+                setIsLoading(false);
+              }
+            }).catch(() => {
+              setErrorMsg(`Siaran "${channel.name}" sedang offline dari server sumber asal.`);
+              setIsLoading(false);
+            });
+          } else {
+            // No subscriber code used, pure upstream error
+            console.warn(`Upstream stream 403 pada saluran "${channel.name}"`);
+            setErrorMsg(`Siaran "${channel.name}" sedang offline atau dibatasi oleh server sumber penyedia (HTTP 403). Silakan coba saluran lain.`);
+            setIsLoading(false);
+          }
           return;
         }
 
